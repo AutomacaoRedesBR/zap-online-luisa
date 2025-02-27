@@ -1,13 +1,12 @@
 
 import { useState } from 'react';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   RegisterData, 
   UserData, 
   LoginData, 
-  createUserInstance, 
-  getUserData, 
+  createUserInstance,
+  loginUser,
   getUserInstance 
 } from '@/services/authService';
 import { sendToExternalAPI } from '@/services/externalApi';
@@ -24,25 +23,10 @@ export function useAuth() {
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      // 1. Registrar o usuário no Supabase Auth (ainda necessário para autenticação)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            name: data.name,
-            phone: data.phone,
-          }
-        }
-      });
-      
-      if (authError) throw authError;
-      if (!authData.user?.id) throw new Error('Falha ao obter ID do usuário');
-      
-      // 2. Gerar um ID temporário para a instância
+      // 1. Gerar um ID temporário para a instância
       const tempInstanceId = crypto.randomUUID();
       
-      // 3. Enviar dados diretamente para a API externa
+      // 2. Enviar dados diretamente para a API externa
       const apiResponse = await sendToExternalAPI({
         name: data.name,
         email: data.email,
@@ -51,9 +35,8 @@ export function useAuth() {
         instance_id: tempInstanceId
       });
       
-      // 4. Atualizar o estado da aplicação indicando sucesso no registro
+      // 3. Se a API retornou sucesso, atualizar o estado
       setUserData({
-        id: authData.user.id,
         name: data.name,
         email: data.email,
         phone: data.phone || '',
@@ -74,23 +57,23 @@ export function useAuth() {
   const handleLogin = async (data: LoginData) => {
     setIsLoading(true);
     try {
-      // 1. Login no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password
-      });
+      // 1. Autenticar usuário usando a tabela Users
+      const user = await loginUser(data);
       
-      if (authError) throw authError;
+      // 2. Obter a primeira instância do usuário (se existir)
+      const instanceData = await getUserInstance(user.id);
       
-      // 2. Obter dados do usuário do Supabase Auth
-      const user = authData.user;
+      // 3. Se existir uma instância, armazenar seu ID
+      if (instanceData) {
+        setInstanceId(instanceData.id);
+      }
       
-      // 3. Atualizar o estado da aplicação
+      // 4. Atualizar o estado da aplicação
       setUserData({
         id: user.id,
-        name: user.user_metadata.name || '',
-        email: user.email || '',
-        phone: user.user_metadata.phone || '',
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
       });
       
       setIsLoggedIn(true);

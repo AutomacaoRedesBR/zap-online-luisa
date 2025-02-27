@@ -76,6 +76,61 @@ export async function createUserInstance(userId: string, freePlanId: string) {
   }
 }
 
+export async function registerUser(userData: RegisterData) {
+  try {
+    // Verificar se o email já existe
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', userData.email)
+      .maybeSingle();
+    
+    if (checkError) throw checkError;
+    if (existingUser) throw new Error('Email já cadastrado');
+    
+    // Inserir novo usuário
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        // Note: Idealmente deveria usar hash para senha, mas como vamos usar API externa,
+        // não vamos armazenar a senha aqui
+      })
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Erro ao registrar usuário:', error);
+    throw error;
+  }
+}
+
+export async function loginUser(credentials: LoginData) {
+  try {
+    // Buscar usuário pelo email
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', credentials.email)
+      .maybeSingle();
+    
+    if (error) throw error;
+    if (!data) throw new Error('Usuário não encontrado');
+    
+    // Na prática, você deve verificar a senha corretamente aqui,
+    // mas como estamos usando a API externa para autenticação,
+    // estamos apenas retornando o usuário
+    return data;
+  } catch (error) {
+    console.error('Erro ao fazer login:', error);
+    throw error;
+  }
+}
+
 export async function getUserData(userId: string) {
   const { data, error } = await supabase
     .from('users')

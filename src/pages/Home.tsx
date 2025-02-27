@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, User, Plus } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface HomeProps {
@@ -22,7 +21,6 @@ const Home = ({ userData, onLogout }: HomeProps) => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
       onLogout();
       toast.success("Logout realizado com sucesso!");
       navigate('/');
