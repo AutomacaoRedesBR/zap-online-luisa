@@ -31,7 +31,7 @@ const Index = () => {
           .from('plans')
           .select('id')
           .eq('name', 'Free')
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
         if (data) setFreePlanId(data.id);
@@ -55,7 +55,7 @@ const Index = () => {
       const expirationDate = new Date();
       expirationDate.setMonth(expirationDate.getMonth() + 1);
 
-      // Criar nova instância
+      // Criar nova instância - Removendo user_sequence_id para deixar o trigger atribuir automaticamente
       const { data, error } = await supabase
         .from('instances')
         .insert({
@@ -63,11 +63,17 @@ const Index = () => {
           plan_id: freePlanId,
           name: 'Instância Principal',
           expiration_date: expirationDate.toISOString(),
+          status: 'pending',
+          sent_messages_number: 0
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar instância:', error);
+        throw error;
+      }
+      
       return data;
     } catch (error) {
       console.error('Erro ao criar instância:', error);
@@ -103,7 +109,7 @@ const Index = () => {
           phone: data.phone,
         })
         .select()
-        .single();
+        .maybeSingle();
       
       if (userError) throw userError;
       
@@ -156,9 +162,9 @@ const Index = () => {
         .from('users')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
       
-      if (userError) throw userError;
+      if (userError || !userData) throw userError || new Error('Usuário não encontrado');
       
       // 3. Obter a primeira instância do usuário
       const { data: instanceData, error: instanceError } = await supabase
@@ -167,11 +173,7 @@ const Index = () => {
         .eq('user_id', userData.id)
         .order('created_at', { ascending: true })
         .limit(1)
-        .single();
-      
-      if (instanceError && instanceError.code !== 'PGRST116') { // Ignorar erro de "nenhum resultado"
-        throw instanceError;
-      }
+        .maybeSingle();
       
       // 4. Se não existir instância, criar uma
       let instance = instanceData;
@@ -202,6 +204,8 @@ const Index = () => {
 
   const sendToExternalAPI = async (data: { name: string; email: string; phone: string; password?: string; instance_id: string }) => {
     try {
+      console.log('Enviando dados para API externa:', data);
+      
       const response = await fetch('https://n8n-editor.teste.onlinecenter.com.br/webhook-test/criar-instancia', {
         method: 'POST',
         headers: {
@@ -211,18 +215,24 @@ const Index = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Falha ao enviar dados para API externa');
+        const errorText = await response.text();
+        console.error('Resposta da API não ok:', response.status, errorText);
+        throw new Error(`Falha ao enviar dados para API externa: ${response.status} ${errorText}`);
       }
 
       const responseData = await response.json();
       console.log('Resposta da API externa:', responseData);
       
       // Atualizar a instância com a chave da API, se disponível
-      if (responseData.apiKey && userData?.id) {
-        await supabase
+      if (responseData.apiKey) {
+        const { error } = await supabase
           .from('instances')
           .update({ evo_api_key: responseData.apiKey })
           .eq('id', data.instance_id);
+          
+        if (error) {
+          console.error('Erro ao atualizar instância com apiKey:', error);
+        }
       }
       
       return responseData;
@@ -234,12 +244,16 @@ const Index = () => {
 
   const handleQRScanComplete = async (token: string, qrUserData: any) => {
     try {
-      if (userData?.id && instanceId) {
+      if (instanceId) {
         // Atualizar status da instância para "active"
-        await supabase
+        const { error } = await supabase
           .from('instances')
           .update({ status: 'active' })
           .eq('id', instanceId);
+          
+        if (error) {
+          console.error('Erro ao atualizar status da instância:', error);
+        }
       }
       setUserToken(token);
       setUserData(prev => ({
