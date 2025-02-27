@@ -68,39 +68,21 @@ export function useAuth() {
         password: data.password
       });
       
-      // Verificar se a resposta contém os dados do usuário
-      if (!apiResponse || !apiResponse.user) {
-        throw new Error("Resposta inválida da API");
-      }
-      
-      const user = apiResponse.user;
-      
-      // 2. Obter a primeira instância do usuário (se existir)
-      if (user.id) {
-        const instanceData = await getUserInstance(user.id);
-        
-        // 3. Se existir uma instância, armazenar seu ID
-        if (instanceData) {
-          setInstanceId(instanceData.id);
-        }
-        
-        // Armazenar o token, se disponível
-        if (apiResponse.token) {
-          setUserToken(apiResponse.token);
-        }
-        
-        // 4. Atualizar o estado da aplicação
+      // Verificar se o login foi bem-sucedido
+      if (apiResponse && apiResponse.logged === true) {
+        // Usuário se autenticou com sucesso
+        // Como a API não retorna os dados do usuário, vamos criá-los com base no email
         setUserData({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || '',
+          id: Date.now().toString(), // ID temporário apenas para a sessão
+          name: data.email.split('@')[0], // Nome temporário baseado no email
+          email: data.email,
+          phone: '',
         });
         
         setIsLoggedIn(true);
         toast.success("Login realizado com sucesso!");
       } else {
-        throw new Error("Dados do usuário incompletos");
+        throw new Error("Credenciais inválidas. Por favor, tente novamente.");
       }
       
     } catch (error: any) {
