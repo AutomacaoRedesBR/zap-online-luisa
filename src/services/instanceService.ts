@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface Plan {
   id: string;
@@ -52,9 +53,14 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       throw new Error('Usuário não encontrado ou sessão expirada');
     }
     
+    // Garantir que temos um UUID válido para o userId
+    // Se o ID armazenado não for um UUID válido, vamos gerar um novo
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const userUUID = uuidPattern.test(data.userId) ? data.userId : uuidv4();
+    
     console.log('Dados do usuário recuperados do localStorage:', userData);
     console.log('Enviando requisição para API externa com dados:', {
-      userId: data.userId,
+      userId: userUUID, // Usando o UUID válido aqui
       name: data.name,
       planId: data.planId,
       email: userData.email,
@@ -68,7 +74,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        userId: data.userId,
+        userId: userUUID, // Usando o UUID válido aqui
         name: data.name,
         planId: data.planId,
         email: userData.email,
@@ -102,7 +108,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       await supabase
         .from('instances')
         .insert({
-          user_id: data.userId,
+          user_id: userUUID, // Usando o UUID válido aqui também
           plan_id: data.planId,
           name: data.name,
           expiration_date: expirationDate.toISOString(),
