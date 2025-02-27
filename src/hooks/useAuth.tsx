@@ -17,8 +17,9 @@ export function useAuth() {
   const [instanceId, setInstanceId] = useState('');
   const [userToken, setUserToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false);
+  const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
   const [freePlanId, setFreePlanId] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -42,7 +43,7 @@ export function useAuth() {
       const tempInstanceId = crypto.randomUUID();
       
       // 3. Enviar dados diretamente para a API externa
-      await sendToExternalAPI({
+      const apiResponse = await sendToExternalAPI({
         name: data.name,
         email: data.email,
         phone: data.phone,
@@ -50,7 +51,7 @@ export function useAuth() {
         instance_id: tempInstanceId
       });
       
-      // 4. Atualizar o estado da aplicação com os dados do usuário
+      // 4. Atualizar o estado da aplicação indicando sucesso no registro
       setUserData({
         id: authData.user.id,
         name: data.name,
@@ -59,7 +60,7 @@ export function useAuth() {
       });
       
       setInstanceId(tempInstanceId);
-      setShowQRCode(true);
+      setRegistrationSuccessful(true);
       toast.success("Conta criada com sucesso! Dados enviados para API externa.");
       
     } catch (error: any) {
@@ -81,29 +82,18 @@ export function useAuth() {
       
       if (authError) throw authError;
       
-      // 2. Obter dados do usuário
-      const userData = await getUserData(authData.user.id);
+      // 2. Obter dados do usuário do Supabase Auth
+      const user = authData.user;
       
-      // 3. Obter a primeira instância do usuário
-      const instanceData = await getUserInstance(userData.id);
-      
-      // 4. Se não existir instância, criar uma
-      let instance = instanceData;
-      if (!instance) {
-        instance = await createUserInstance(userData.id, freePlanId);
-        if (!instance) throw new Error('Falha ao criar instância');
-      }
-      
-      // 5. Atualizar o estado da aplicação
+      // 3. Atualizar o estado da aplicação
       setUserData({
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone || '',
+        id: user.id,
+        name: user.user_metadata.name || '',
+        email: user.email || '',
+        phone: user.user_metadata.phone || '',
       });
       
-      setInstanceId(instance.id);
-      setShowQRCode(true);
+      setIsLoggedIn(true);
       toast.success("Login realizado com sucesso!");
       
     } catch (error: any) {
@@ -114,21 +104,16 @@ export function useAuth() {
     }
   };
 
-  const handleQRScanComplete = async (token: string, qrUserData: any) => {
-    try {
-      if (instanceId) {
-        // Para novos usuários, não precisamos atualizar o status no Supabase
-        // já que não estamos criando a instância lá
-        console.log('QR Code escaneado com sucesso para a instância:', instanceId);
-      }
-      setUserToken(token);
-      setUserData(prev => ({
-        ...prev!,
-        ...qrUserData
-      }));
-    } catch (error) {
-      console.error('Erro ao finalizar scan do QR Code:', error);
-    }
+  const handleLogout = () => {
+    setUserData(null);
+    setIsLoggedIn(false);
+    setInstanceId('');
+    setUserToken('');
+    setRegistrationSuccessful(false);
+  };
+
+  const resetRegistrationState = () => {
+    setRegistrationSuccessful(false);
   };
 
   return {
@@ -136,10 +121,12 @@ export function useAuth() {
     instanceId,
     userToken,
     isLoading,
-    showQRCode,
+    registrationSuccessful,
+    isLoggedIn,
     setFreePlanId,
     handleRegister,
     handleLogin,
-    handleQRScanComplete
+    handleLogout,
+    resetRegistrationState
   };
 }

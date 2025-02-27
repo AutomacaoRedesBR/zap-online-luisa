@@ -2,25 +2,25 @@
 import { useEffect, useState } from 'react';
 import { LoginForm } from '@/components/LoginForm';
 import { RegisterForm } from '@/components/RegisterForm';
-import { QRCodeDisplay } from '@/components/QRCodeDisplay';
-import { UserInfo } from '@/components/UserInfo';
+import { RegistrationSuccess } from '@/components/RegistrationSuccess';
 import { fetchFreePlan } from '@/services/authService';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const { 
     userData, 
-    instanceId, 
-    userToken, 
     isLoading, 
-    showQRCode,
+    registrationSuccessful,
+    isLoggedIn,
     setFreePlanId, 
     handleRegister, 
-    handleLogin, 
-    handleQRScanComplete 
+    handleLogin,
+    resetRegistrationState
   } = useAuth();
 
   const [isRegistering, setIsRegistering] = useState(false);
+  const navigate = useNavigate();
 
   // Carregar o ID do plano gratuito
   useEffect(() => {
@@ -32,10 +32,24 @@ const Index = () => {
     loadFreePlan();
   }, [setFreePlanId]);
 
+  // Redirecionar para a página home se o usuário estiver logado
+  useEffect(() => {
+    if (isLoggedIn && userData) {
+      navigate('/home');
+    }
+  }, [isLoggedIn, userData, navigate]);
+
+  const handleBackToLogin = () => {
+    setIsRegistering(false);
+    resetRegistrationState();
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="w-full max-w-md">
-        {!showQRCode && !userData && (
+        {registrationSuccessful ? (
+          <RegistrationSuccess onBackToLogin={handleBackToLogin} />
+        ) : (
           isRegistering ? (
             <RegisterForm
               onSubmit={handleRegister}
@@ -49,17 +63,6 @@ const Index = () => {
               isLoading={isLoading}
             />
           )
-        )}
-        
-        {showQRCode && !userToken && (
-          <QRCodeDisplay
-            instanceId={instanceId}
-            onScanComplete={handleQRScanComplete}
-          />
-        )}
-        
-        {userData && userToken && (
-          <UserInfo token={userToken} userData={userData} />
         )}
       </div>
     </div>
