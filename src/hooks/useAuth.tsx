@@ -27,6 +27,7 @@ export function useAuth() {
     if (storedUser && storedLoginState === 'true') {
       setUserData(JSON.parse(storedUser));
       setIsLoggedIn(true);
+      console.log("Auth - Recuperou credenciais do localStorage:", { storedUser, storedLoginState });
     }
   }, []);
 
@@ -70,7 +71,7 @@ export function useAuth() {
   const handleLogin = async (data: LoginData) => {
     setIsLoading(true);
     try {
-      console.log("Tentando login com API externa:", data);
+      console.log("Auth - Tentando login com API externa:", data);
       
       // Enviar credenciais para a API externa
       const apiResponse = await loginWithExternalAPI({
@@ -80,7 +81,7 @@ export function useAuth() {
       
       // Verificar se o login foi bem-sucedido
       if (apiResponse && apiResponse.logged === true) {
-        console.log("Login bem-sucedido, atualizando estado...");
+        console.log("Auth - Login bem-sucedido, atualizando estado...");
         
         // Usuário se autenticou com sucesso
         const user = {
@@ -94,6 +95,7 @@ export function useAuth() {
         localStorage.setItem('userData', JSON.stringify(user));
         localStorage.setItem('isLoggedIn', 'true');
         
+        // Atualizar o estado
         setUserData(user);
         setIsLoggedIn(true);
         

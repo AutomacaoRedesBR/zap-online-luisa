@@ -15,6 +15,8 @@ const queryClient = new QueryClient();
 const App = () => {
   const { userData, isLoggedIn, handleLogout } = useAuth();
 
+  console.log("App - Estado de autenticação:", { isLoggedIn, userData });
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -30,15 +32,25 @@ const App = () => {
               path="/dashboard" 
               element={
                 isLoggedIn ? (
-                  <div className="min-h-screen w-full flex items-center justify-center">
-                    <h1 className="text-4xl font-bold">Dashboard (Área Logada)</h1>
-                    <Button 
-                      onClick={handleLogout} 
-                      className="ml-4"
-                      variant="destructive"
-                    >
-                      Logout
-                    </Button>
+                  <div className="min-h-screen w-full flex flex-col items-center justify-center">
+                    <div className="flex items-center mb-8">
+                      <h1 className="text-4xl font-bold">Dashboard (Área Logada)</h1>
+                      <Button 
+                        onClick={handleLogout} 
+                        className="ml-4"
+                        variant="destructive"
+                      >
+                        Logout
+                      </Button>
+                    </div>
+                    {userData && (
+                      <div className="bg-secondary/10 p-6 rounded-lg max-w-md w-full">
+                        <h2 className="text-xl font-semibold mb-4">Informações do Usuário</h2>
+                        <p><strong>Nome:</strong> {userData.name}</p>
+                        <p><strong>Email:</strong> {userData.email}</p>
+                        <p><strong>ID:</strong> {userData.id}</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <Navigate to="/login" replace />

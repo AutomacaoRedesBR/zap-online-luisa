@@ -34,13 +34,9 @@ const Index = () => {
 
   // Verificar se o usuário está logado e redirecionar se estiver
   useEffect(() => {
-    console.log("Login - Verificando login:", { isLoggedIn, userData });
     if (isLoggedIn && userData) {
-      console.log("Login - Redirecionando para Dashboard");
-      // Usar um pequeno timeout para garantir que o estado foi atualizado
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 100);
+      console.log("Login - Redirecionando para Dashboard:", { isLoggedIn, userData });
+      navigate('/dashboard', { replace: true });
     }
   }, [isLoggedIn, userData, navigate]);
 
@@ -55,7 +51,10 @@ const Index = () => {
     const success = await handleLogin(data);
     console.log("Login - Resultado do login:", success);
     
-    // Após login bem-sucedido, o useEffect acima deve fazer o redirecionamento
+    if (success) {
+      // Forçar redirecionamento imediatamente após login bem-sucedido
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   return (
