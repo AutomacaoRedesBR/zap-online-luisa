@@ -1,6 +1,4 @@
 
-import { updateInstanceApiKey } from './authService';
-
 export interface ExternalApiData {
   name: string;
   email: string;
@@ -34,11 +32,6 @@ export async function sendToExternalAPI(data: ExternalApiData) {
 
     const responseData = await response.json();
     console.log('Resposta da API externa:', responseData);
-    
-    // Atualizar a instância com a chave da API, se disponível
-    if (responseData.apiKey) {
-      await updateInstanceApiKey(data.instance_id, responseData.apiKey);
-    }
     
     return responseData;
   } catch (error) {
