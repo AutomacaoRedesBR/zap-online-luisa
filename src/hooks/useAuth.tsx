@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from "sonner";
 import { 
   RegisterData, 
@@ -17,24 +17,25 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
   const [freePlanId, setFreePlanId] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    // Inicializar o estado com base no localStorage logo na criação do componente
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
+  const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Verificar se há dados de login no localStorage ao iniciar
+  // Verificar se há dados de login no localStorage ao iniciar (apenas uma vez)
   useEffect(() => {
-    const checkAuth = () => {
-      const storedUser = localStorage.getItem('userData');
-      const storedLoginState = localStorage.getItem('isLoggedIn');
-      
-      if (storedUser && storedLoginState === 'true') {
-        const parsedUser = JSON.parse(storedUser);
-        setUserData(parsedUser);
-        setIsLoggedIn(true);
-        console.log("Auth - Recuperou credenciais do localStorage");
-      }
-    };
+    if (authInitialized) return;
 
-    checkAuth();
-  }, []);
+    const storedUser = localStorage.getItem('userData');
+    
+    if (storedUser && localStorage.getItem('isLoggedIn') === 'true') {
+      setUserData(JSON.parse(storedUser));
+      console.log("Auth - Credenciais recuperadas do localStorage");
+    }
+    
+    setAuthInitialized(true);
+  }, [authInitialized]);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -90,13 +91,13 @@ export function useAuth() {
           phone: '',
         };
         
-        // Primeiro atualizar o estado
-        setUserData(user);
-        setIsLoggedIn(true);
-        
-        // Depois persistir no localStorage
+        // Atualizar localStorage primeiro
         localStorage.setItem('userData', JSON.stringify(user));
         localStorage.setItem('isLoggedIn', 'true');
+        
+        // Depois atualizar o estado
+        setUserData(user);
+        setIsLoggedIn(true);
         
         toast.success("Login realizado com sucesso!");
         return true;
@@ -113,16 +114,19 @@ export function useAuth() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     console.log("Fazendo logout...");
+    // Primeiro limpar o localStorage
     localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
+    
+    // Depois atualizar os estados
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');
     setUserToken('');
     setRegistrationSuccessful(false);
-  };
+  }, []);
 
   const resetRegistrationState = () => {
     setRegistrationSuccessful(false);
@@ -135,6 +139,7 @@ export function useAuth() {
     isLoading,
     registrationSuccessful,
     isLoggedIn,
+    authInitialized,
     setFreePlanId,
     handleRegister,
     handleLogin,

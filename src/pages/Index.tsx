@@ -32,10 +32,10 @@ const Index = () => {
     loadFreePlan();
   }, [setFreePlanId]);
 
-  // Verificar autenticação apenas quando não estiver no processo de login
+  // Verificar se o usuário já está logado ao iniciar (apenas uma vez)
   useEffect(() => {
-    if (!isAuthenticating && isLoggedIn && userData) {
-      console.log("Login - Redirecionando para Dashboard após verificação de autenticação");
+    if (isLoggedIn && userData && !isAuthenticating) {
+      console.log("Login - Já está autenticado, redirecionando para Dashboard");
       navigate('/dashboard', { replace: true });
     }
   }, [isLoggedIn, userData, navigate, isAuthenticating]);
