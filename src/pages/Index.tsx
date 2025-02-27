@@ -32,7 +32,7 @@ const Index = () => {
     loadFreePlan();
   }, [setFreePlanId]);
 
-  // Redirecionar para a página home se o usuário estiver logado
+  // Verificar se o usuário está logado e redirecionar se estiver
   useEffect(() => {
     if (isLoggedIn && userData) {
       navigate('/home');
@@ -42,6 +42,12 @@ const Index = () => {
   const handleBackToLogin = () => {
     setIsRegistering(false);
     resetRegistrationState();
+  };
+
+  // Função para processar o login com redirecionamento
+  const processLogin = async (data: { email: string; password: string }) => {
+    await handleLogin(data);
+    // O redirecionamento será feito pelo useEffect acima quando isLoggedIn mudar
   };
 
   return (
@@ -58,7 +64,7 @@ const Index = () => {
             />
           ) : (
             <LoginForm
-              onSubmit={handleLogin}
+              onSubmit={processLogin}
               onToggleForm={() => setIsRegistering(true)}
               isLoading={isLoading}
             />

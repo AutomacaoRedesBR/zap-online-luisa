@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { 
   RegisterData, 
@@ -19,6 +19,14 @@ export function useAuth() {
   const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
   const [freePlanId, setFreePlanId] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Verificar se o usuário já está logado quando o hook é montado
+  useEffect(() => {
+    // Se tiver userData, então o usuário está logado
+    if (userData) {
+      setIsLoggedIn(true);
+    }
+  }, [userData]);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -72,15 +80,18 @@ export function useAuth() {
       if (apiResponse && apiResponse.logged === true) {
         // Usuário se autenticou com sucesso
         // Como a API não retorna os dados do usuário, vamos criá-los com base no email
-        setUserData({
+        const user = {
           id: Date.now().toString(), // ID temporário apenas para a sessão
           name: data.email.split('@')[0], // Nome temporário baseado no email
           email: data.email,
           phone: '',
-        });
+        };
         
+        setUserData(user);
         setIsLoggedIn(true);
+        
         toast.success("Login realizado com sucesso!");
+        return true;
       } else {
         throw new Error("Credenciais inválidas. Por favor, tente novamente.");
       }
@@ -88,6 +99,7 @@ export function useAuth() {
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
       toast.error(`Falha ao fazer login: ${error.message}`);
+      return false;
     } finally {
       setIsLoading(false);
     }
