@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
@@ -39,13 +39,20 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 // Componente de Dashboard separado
 const Dashboard = () => {
   const { userData, handleLogout } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLogoutClick = () => {
+    handleLogout();
+    // Redirecionar para a página de login após o logout
+    navigate('/login', { replace: true });
+  };
   
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center">
       <div className="flex items-center mb-8">
         <h1 className="text-4xl font-bold">Dashboard (Área Logada)</h1>
         <Button 
-          onClick={handleLogout} 
+          onClick={handleLogoutClick} 
           className="ml-4"
           variant="destructive"
         >

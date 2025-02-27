@@ -126,6 +126,9 @@ export function useAuth() {
     setInstanceId('');
     setUserToken('');
     setRegistrationSuccessful(false);
+    
+    // Mostrar mensagem de sucesso
+    toast.success("Logout realizado com sucesso!");
   }, []);
 
   const resetRegistrationState = () => {
