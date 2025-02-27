@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Phone, User } from 'lucide-react';
+import { Mail, Phone, User, Loader2 } from 'lucide-react';
 
 interface LoginFormProps {
   onSubmit: (data: { email: string; password: string }) => void;
   onToggleForm: () => void;
+  isLoading?: boolean;
 }
 
-export const LoginForm = ({ onSubmit, onToggleForm }: LoginFormProps) => {
+export const LoginForm = ({ onSubmit, onToggleForm, isLoading = false }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -42,6 +43,7 @@ export const LoginForm = ({ onSubmit, onToggleForm }: LoginFormProps) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -53,18 +55,27 @@ export const LoginForm = ({ onSubmit, onToggleForm }: LoginFormProps) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
         </CardContent>
         <CardFooter className="flex-col space-y-2">
-          <Button type="submit" className="w-full">
-            Entrar
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Aguarde...
+              </>
+            ) : (
+              "Entrar"
+            )}
           </Button>
           <Button
             type="button"
             variant="ghost"
             className="w-full"
             onClick={onToggleForm}
+            disabled={isLoading}
           >
             Criar uma conta
           </Button>

@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Phone, User } from 'lucide-react';
+import { Mail, Phone, User, Loader2 } from 'lucide-react';
 
 interface RegisterFormProps {
   onSubmit: (data: { name: string; email: string; phone: string }) => void;
   onToggleForm: () => void;
+  isLoading?: boolean;
 }
 
-export const RegisterForm = ({ onSubmit, onToggleForm }: RegisterFormProps) => {
+export const RegisterForm = ({ onSubmit, onToggleForm, isLoading = false }: RegisterFormProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -42,6 +43,7 @@ export const RegisterForm = ({ onSubmit, onToggleForm }: RegisterFormProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -57,6 +59,7 @@ export const RegisterForm = ({ onSubmit, onToggleForm }: RegisterFormProps) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -72,19 +75,28 @@ export const RegisterForm = ({ onSubmit, onToggleForm }: RegisterFormProps) => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex-col space-y-2">
-          <Button type="submit" className="w-full">
-            Cadastrar
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Aguarde...
+              </>
+            ) : (
+              "Cadastrar"
+            )}
           </Button>
           <Button
             type="button"
             variant="ghost"
             className="w-full"
             onClick={onToggleForm}
+            disabled={isLoading}
           >
             Já tenho uma conta
           </Button>
