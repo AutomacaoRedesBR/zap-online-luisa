@@ -67,8 +67,8 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       userName: userData.name
     });
 
-    // Enviar requisição para API externa
-    const response = await fetch('https://n8n-editor.teste.onlinecenter.com.br/webhook-test/criar-instancia', {
+    // Enviar requisição para API externa - URL ATUALIZADA
+    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
