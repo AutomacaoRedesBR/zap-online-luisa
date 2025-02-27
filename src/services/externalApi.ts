@@ -9,6 +9,11 @@ export interface ExternalApiData {
   instance_id: string;
 }
 
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
 export async function sendToExternalAPI(data: ExternalApiData) {
   try {
     console.log('Enviando dados para API externa:', data);
@@ -38,6 +43,34 @@ export async function sendToExternalAPI(data: ExternalApiData) {
     return responseData;
   } catch (error) {
     console.error('Erro ao enviar para API externa:', error);
+    throw error;
+  }
+}
+
+export async function loginWithExternalAPI(credentials: LoginCredentials) {
+  try {
+    console.log('Enviando credenciais de login para API externa:', credentials);
+    
+    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Resposta da API não ok:', response.status, errorText);
+      throw new Error(`Falha ao autenticar: ${response.status} ${errorText}`);
+    }
+
+    const userData = await response.json();
+    console.log('Resposta de login da API externa:', userData);
+    
+    return userData;
+  } catch (error) {
+    console.error('Erro ao fazer login com API externa:', error);
     throw error;
   }
 }

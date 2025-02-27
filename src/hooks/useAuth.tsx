@@ -6,11 +6,10 @@ import {
   UserData, 
   LoginData, 
   createUserInstance,
-  loginUser,
   getUserInstance,
   registerUser 
 } from '@/services/authService';
-import { sendToExternalAPI } from '@/services/externalApi';
+import { sendToExternalAPI, loginWithExternalAPI } from '@/services/externalApi';
 
 export function useAuth() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -61,20 +60,33 @@ export function useAuth() {
   const handleLogin = async (data: LoginData) => {
     setIsLoading(true);
     try {
-      console.log("Tentando login com:", data);
+      console.log("Tentando login com API externa:", data);
       
-      // 1. Autenticar usuário usando a tabela Users
-      const user = await loginUser(data);
+      // Enviar credenciais para a API externa
+      const apiResponse = await loginWithExternalAPI({
+        email: data.email,
+        password: data.password
+      });
       
-      console.log("Usuário autenticado:", user);
+      // Verificar se a resposta contém os dados do usuário
+      if (!apiResponse || !apiResponse.user) {
+        throw new Error("Resposta inválida da API");
+      }
+      
+      const user = apiResponse.user;
       
       // 2. Obter a primeira instância do usuário (se existir)
-      if (user && user.id) {
+      if (user.id) {
         const instanceData = await getUserInstance(user.id);
         
         // 3. Se existir uma instância, armazenar seu ID
         if (instanceData) {
           setInstanceId(instanceData.id);
+        }
+        
+        // Armazenar o token, se disponível
+        if (apiResponse.token) {
+          setUserToken(apiResponse.token);
         }
         
         // 4. Atualizar o estado da aplicação
@@ -88,7 +100,7 @@ export function useAuth() {
         setIsLoggedIn(true);
         toast.success("Login realizado com sucesso!");
       } else {
-        throw new Error("Usuário não encontrado");
+        throw new Error("Dados do usuário incompletos");
       }
       
     } catch (error: any) {
