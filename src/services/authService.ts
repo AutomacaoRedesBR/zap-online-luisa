@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -88,15 +87,14 @@ export async function registerUser(userData: RegisterData) {
     if (checkError) throw checkError;
     if (existingUser) throw new Error('Email já cadastrado');
     
-    // Inserir novo usuário
+    // Inserir novo usuário com senha
     const { data, error } = await supabase
       .from('users')
       .insert({
         name: userData.name,
         email: userData.email,
         phone: userData.phone,
-        // Note: Idealmente deveria usar hash para senha, mas como vamos usar API externa,
-        // não vamos armazenar a senha aqui
+        password: userData.password // Agora podemos armazenar a senha
       })
       .select()
       .maybeSingle();
@@ -111,19 +109,17 @@ export async function registerUser(userData: RegisterData) {
 
 export async function loginUser(credentials: LoginData) {
   try {
-    // Buscar usuário pelo email
+    // Buscar usuário pelo email e verificar a senha
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', credentials.email)
+      .eq('password', credentials.password) // Adicionar verificação de senha
       .maybeSingle();
     
     if (error) throw error;
-    if (!data) throw new Error('Usuário não encontrado');
+    if (!data) throw new Error('Email ou senha incorretos');
     
-    // Na prática, você deve verificar a senha corretamente aqui,
-    // mas como estamos usando a API externa para autenticação,
-    // estamos apenas retornando o usuário
     return data;
   } catch (error) {
     console.error('Erro ao fazer login:', error);
