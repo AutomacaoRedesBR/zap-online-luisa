@@ -22,11 +22,21 @@ export function useAuth() {
 
   // Verificar se o usuário já está logado quando o hook é montado
   useEffect(() => {
+    // Log para depuração
+    console.log("userData mudou:", userData);
+    
     // Se tiver userData, então o usuário está logado
     if (userData) {
       setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
     }
   }, [userData]);
+
+  // Log para depuração
+  useEffect(() => {
+    console.log("isLoggedIn mudou:", isLoggedIn);
+  }, [isLoggedIn]);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -78,6 +88,8 @@ export function useAuth() {
       
       // Verificar se o login foi bem-sucedido
       if (apiResponse && apiResponse.logged === true) {
+        console.log("Login bem-sucedido, atualizando estado...");
+        
         // Usuário se autenticou com sucesso
         // Como a API não retorna os dados do usuário, vamos criá-los com base no email
         const user = {
@@ -87,8 +99,9 @@ export function useAuth() {
           phone: '',
         };
         
-        setUserData(user);
+        // Importante: primeiro definir isLoggedIn para true, depois userData
         setIsLoggedIn(true);
+        setUserData(user);
         
         toast.success("Login realizado com sucesso!");
         return true;
@@ -106,6 +119,8 @@ export function useAuth() {
   };
 
   const handleLogout = () => {
+    console.log("Fazendo logout...");
+    // Importante: primeiro limpar userData, depois definir isLoggedIn como false
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');
