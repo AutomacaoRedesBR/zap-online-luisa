@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { useNavigate } from 'react-router-dom';
 import { 
   RegisterData, 
   UserData, 
@@ -20,10 +19,13 @@ export function useAuth() {
   const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
   const [freePlanId, setFreePlanId] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const navigate = useNavigate();
 
   // Verificar se o usuário já está logado quando o hook é montado
   useEffect(() => {
+    // Log para depuração
+    console.log("userData mudou:", userData);
+    
+    // Se tiver userData, então o usuário está logado
     if (userData) {
       setIsLoggedIn(true);
     } else {
@@ -31,13 +33,10 @@ export function useAuth() {
     }
   }, [userData]);
 
-  // Efeito para redirecionar quando isLoggedIn mudar
+  // Log para depuração
   useEffect(() => {
-    if (isLoggedIn && userData) {
-      console.log("Redirecionando para home...");
-      navigate('/home');
-    }
-  }, [isLoggedIn, userData, navigate]);
+    console.log("isLoggedIn mudou:", isLoggedIn);
+  }, [isLoggedIn]);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -100,16 +99,11 @@ export function useAuth() {
           phone: '',
         };
         
-        setUserData(user);
+        // Importante: primeiro definir isLoggedIn para true, depois userData
         setIsLoggedIn(true);
+        setUserData(user);
         
         toast.success("Login realizado com sucesso!");
-        
-        // Redirecionamento programático direto
-        setTimeout(() => {
-          navigate('/home');
-        }, 1000);
-        
         return true;
       } else {
         throw new Error("Credenciais inválidas. Por favor, tente novamente.");
@@ -126,12 +120,12 @@ export function useAuth() {
 
   const handleLogout = () => {
     console.log("Fazendo logout...");
+    // Importante: primeiro limpar userData, depois definir isLoggedIn como false
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');
     setUserToken('');
     setRegistrationSuccessful(false);
-    navigate('/');
   };
 
   const resetRegistrationState = () => {
