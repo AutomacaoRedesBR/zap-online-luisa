@@ -40,111 +40,89 @@ export async function fetchPlans(): Promise<Plan[]> {
 
 export async function createInstanceForUser(data: CreateInstanceData): Promise<InstanceResponse> {
   try {
-    // Verificamos a sessão atual
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log('Iniciando criação de instância para usuário com ID:', data.userId);
     
-    if (sessionError) {
-      console.error("Erro ao obter sessão:", sessionError);
-      throw new Error("Não foi possível verificar sua autenticação");
-    }
-    
-    if (!sessionData.session) {
-      console.log("Nenhuma sessão ativa encontrada, tentando fazer login automático");
-      
-      // Recuperar dados do usuário do localStorage para tentar reautenticar
-      const storedUser = localStorage.getItem('userData');
-      if (!storedUser) {
-        throw new Error("Dados do usuário não encontrados, faça login novamente");
-      }
-      
-      const userData = JSON.parse(storedUser);
-      
-      // Tentar reautenticar o usuário com Supabase usando o email armazenado
-      // Não temos a senha, então vamos criar uma instância mesmo sem login no Supabase
-      console.log("Prosseguindo com criação da instância sem autenticação completa");
-    }
-    
-    console.log('Iniciando criação de instância para usuário:', data.userId);
-    
-    // Recuperar dados do usuário do localStorage
+    // Recuperar dados do usuário do localStorage para confirmar ID
     const storedUser = localStorage.getItem('userData');
-    const userData = storedUser ? JSON.parse(storedUser) : null;
-    
-    if (!userData) {
+    if (!storedUser) {
       throw new Error('Dados do usuário não encontrados');
+    }
+    
+    const userData = JSON.parse(storedUser);
+    console.log('Dados do usuário recuperados do localStorage:', userData);
+    
+    // Verificar se o usuário existe na tabela users antes de criar a instância
+    // Para garantir que estamos usando um ID válido
+    const { data: userFromDb, error: userError } = await supabase
+      .from('users')
+      .select('id, email, name')
+      .eq('email', userData.email)
+      .maybeSingle();
+    
+    if (userError) {
+      console.error("Erro ao verificar usuário no banco:", userError);
+      throw new Error(`Erro ao verificar usuário: ${userError.message}`);
+    }
+    
+    // Se não encontrou o usuário pelo email, tentamos pelo ID
+    if (!userFromDb) {
+      const { data: userById, error: userByIdError } = await supabase
+        .from('users')
+        .select('id, email, name')
+        .eq('id', userData.id)
+        .maybeSingle();
+        
+      if (userByIdError || !userById) {
+        console.error("Usuário não encontrado no banco de dados");
+        throw new Error("Usuário não encontrado. Por favor, faça login novamente.");
+      }
+    }
+    
+    // Usar o ID do banco de dados se disponível, caso contrário usar o do localStorage
+    const validUserId = userFromDb?.id || userData.id;
+    console.log("ID válido do usuário para criar instância:", validUserId);
+    
+    // Validar formato do UUID para evitar erros
+    if (!isValidUUID(validUserId)) {
+      console.error("ID do usuário não é um UUID válido:", validUserId);
+      throw new Error("ID de usuário inválido. Por favor, faça login novamente.");
     }
 
     // Gerar um ID de instância UUID único
     const instanceId = uuidv4();
     
-    // Criar a URL do QR Code usando um serviço online
+    // Criar a URL do QR Code
     const qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${instanceId}`;
     
-    // Criar instância no banco de dados
+    // Calcular data de expiração
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + 30);
     
-    // Usamos o ID do supabase se disponível, senão usamos o ID do userData
-    const userId = sessionData.session?.user?.id || userData.id;
+    // Criar instância no banco de dados
+    console.log("Tentando inserir instância com user_id:", validUserId);
     
-    // IMPORTANTE: garantir que estamos usando o ID do usuário no formato correto
-    console.log("Usando user_id para instância:", userId);
-    
-    // Se não tiver autenticação com Supabase, usamos um método alternativo
-    if (!sessionData.session) {
-      // Simulamos uma resposta como se tivesse sido criada no Supabase
-      console.log("Bypass de autenticação Supabase, usando resposta simulada");
-      
-      // Enviar os dados para API externa (se estiver disponível)
-      try {
-        const externalResponse = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: userId,
-            name: data.name,
-            planId: data.planId,
-            email: userData.email,
-            userName: userData.name
-          }),
-        });
-        
-        if (externalResponse.ok) {
-          console.log("Instância criada com sucesso na API externa");
-        }
-      } catch (apiError) {
-        console.warn("API externa não disponível, continuando com simulação local:", apiError);
-      }
-      
-      // Retornamos uma resposta simulada
-      return {
-        qrCode: qrCodeData,
-        instanceId: instanceId
-      };
-    }
-    
-    // Caso contrário, prosseguimos com o fluxo normal do Supabase
-    const { error: insertError } = await supabase
+    const { data: newInstance, error: insertError } = await supabase
       .from('instances')
       .insert({
-        user_id: userId,
+        user_id: validUserId,
         plan_id: data.planId,
         name: data.name,
         expiration_date: expirationDate.toISOString(),
         status: 'pending',
         sent_messages_number: 0,
-        user_sequence_id: 1, // O trigger vai sobrescrever este valor
-        instance_id: instanceId
-      });
+        user_sequence_id: 1 // O trigger vai sobrescrever este valor
+      })
+      .select()
+      .maybeSingle();
 
     if (insertError) {
       console.error('Erro ao salvar instância no banco:', insertError);
       throw insertError;
     }
     
-    // Enviar requisição para API externa
+    console.log("Instância criada com sucesso:", newInstance);
+    
+    // Enviar requisição para API externa (com tratamento de erro)
     try {
       const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
         method: 'POST',
@@ -152,7 +130,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: userId,
+          userId: validUserId,
           name: data.name,
           planId: data.planId,
           email: userData.email,
@@ -165,7 +143,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
         console.log('Resposta da API externa:', apiResponse);
       }
     } catch (apiError) {
-      console.warn('API externa não disponível:', apiError);
+      console.warn('API externa não disponível, continuando fluxo local:', apiError);
     }
     
     return {
@@ -176,4 +154,10 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     console.error('Erro ao criar instância:', error);
     throw error;
   }
+}
+
+// Função para validar UUID
+function isValidUUID(uuid: string) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
 }
