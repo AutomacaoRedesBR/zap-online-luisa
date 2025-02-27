@@ -1,15 +1,14 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from "sonner";
 import { 
   RegisterData, 
   UserData, 
   LoginData, 
   createUserInstance,
-  getUserInstance,
   registerUser 
 } from '@/services/authService';
-import { sendToExternalAPI, loginWithExternalAPI } from '@/services/externalApi';
+import { loginWithExternalAPI } from '@/services/externalApi';
 
 export function useAuth() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -19,24 +18,6 @@ export function useAuth() {
   const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
   const [freePlanId, setFreePlanId] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Verificar se o usuário já está logado quando o hook é montado
-  useEffect(() => {
-    // Log para depuração
-    console.log("userData mudou:", userData);
-    
-    // Se tiver userData, então o usuário está logado
-    if (userData) {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
-    }
-  }, [userData]);
-
-  // Log para depuração
-  useEffect(() => {
-    console.log("isLoggedIn mudou:", isLoggedIn);
-  }, [isLoggedIn]);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -91,7 +72,6 @@ export function useAuth() {
         console.log("Login bem-sucedido, atualizando estado...");
         
         // Usuário se autenticou com sucesso
-        // Como a API não retorna os dados do usuário, vamos criá-los com base no email
         const user = {
           id: Date.now().toString(), // ID temporário apenas para a sessão
           name: data.email.split('@')[0], // Nome temporário baseado no email
@@ -99,7 +79,6 @@ export function useAuth() {
           phone: '',
         };
         
-        // Importante: primeiro definir os dados do usuário, depois o status de login
         setUserData(user);
         setIsLoggedIn(true);
         
@@ -120,7 +99,6 @@ export function useAuth() {
 
   const handleLogout = () => {
     console.log("Fazendo logout...");
-    // Limpar todos os dados de autenticação
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');
