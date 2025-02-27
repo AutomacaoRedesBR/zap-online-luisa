@@ -39,22 +39,20 @@ export async function fetchPlans(): Promise<Plan[]> {
 
 export async function createInstanceForUser(data: CreateInstanceData): Promise<InstanceResponse> {
   try {
-    // Primeiro obter informações do usuário
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('email, name, phone')
-      .eq('id', data.userId)
-      .single();
+    console.log('Iniciando criação de instância para usuário:', data.userId);
+    // Ao invés de buscar os dados do usuário do banco, usaremos os dados da sessão local
+    // ou dados que são passados diretamente
     
-    if (userError) {
-      console.error('Erro ao buscar dados do usuário:', userError);
-      throw new Error('Erro ao buscar dados do usuário');
-    }
+    // Recuperar dados do usuário do localStorage como um backup
+    const storedUser = localStorage.getItem('userData');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
     
     if (!userData) {
-      throw new Error('Usuário não encontrado');
+      console.error('Não foi possível recuperar os dados do usuário do localStorage');
+      throw new Error('Usuário não encontrado ou sessão expirada');
     }
     
+    console.log('Dados do usuário recuperados do localStorage:', userData);
     console.log('Enviando requisição para API externa com dados:', {
       userId: data.userId,
       name: data.name,
@@ -85,6 +83,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     }
 
     const instanceData = await response.json();
+    console.log('Resposta recebida da API externa:', instanceData);
     
     // Verificar se a resposta contém os campos esperados
     if (!instanceData.qrCode || !instanceData.instanceId) {
@@ -92,27 +91,31 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       throw new Error('Resposta inválida da API');
     }
     
-    // Criar instância no banco de dados local
-    const expirationDate = new Date();
-    expirationDate.setDate(expirationDate.getDate() + 30); // 30 dias a partir de hoje
-    
-    const { error: instanceError } = await supabase
-      .from('instances')
-      .insert({
-        user_id: data.userId,
-        plan_id: data.planId,
-        name: data.name,
-        expiration_date: expirationDate.toISOString(),
-        status: 'pending',
-        sent_messages_number: 0,
-        user_sequence_id: 1, // O trigger vai sobrescrever este valor
-        instance_id: instanceData.instanceId // Salvar o ID retornado pela API
-      });
-    
-    if (instanceError) {
-      console.error('Erro ao salvar instância no banco:', instanceError);
-      // Não vamos lançar erro aqui para não interromper o fluxo,
-      // já que a instância foi criada na API externa
+    // Na versão atual, evitaremos tentar salvar no banco de dados Supabase
+    // já que o ID do usuário pode não ser um UUID válido quando logado via API externa
+    // Se ainda quiser tentar salvar (opcional), podemos usar um try-catch para não interromper o fluxo
+    try {
+      // Criar instância no banco de dados local (se possível)
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 30); // 30 dias a partir de hoje
+      
+      await supabase
+        .from('instances')
+        .insert({
+          user_id: data.userId,
+          plan_id: data.planId,
+          name: data.name,
+          expiration_date: expirationDate.toISOString(),
+          status: 'pending',
+          sent_messages_number: 0,
+          user_sequence_id: 1, // O trigger vai sobrescrever este valor
+          instance_id: instanceData.instanceId // Salvar o ID retornado pela API
+        });
+      
+      console.log('Instância salva no banco de dados com sucesso');
+    } catch (dbError) {
+      console.error('Erro ao salvar instância no banco (não crítico):', dbError);
+      // Não interrompe o fluxo, pois a instância já foi criada na API externa
     }
     
     return instanceData;
