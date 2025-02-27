@@ -13,7 +13,7 @@ export async function sendToExternalAPI(data: ExternalApiData) {
   try {
     console.log('Enviando dados para API externa:', data);
     
-    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
+    const response = await fetch('https://n8n-editor.teste.onlinecenter.com.br/webhook-test/criar-instancia', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
