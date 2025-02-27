@@ -7,8 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -34,41 +34,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   // Se estiver logado, mostrar o conteúdo protegido
   return <>{children}</>;
-};
-
-// Componente de Dashboard separado
-const Dashboard = () => {
-  const { userData, handleLogout } = useAuth();
-  const navigate = useNavigate();
-  
-  const handleLogoutClick = () => {
-    handleLogout();
-    // Redirecionar para a página de login após o logout
-    navigate('/login', { replace: true });
-  };
-  
-  return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center">
-      <div className="flex items-center mb-8">
-        <h1 className="text-4xl font-bold">Dashboard (Área Logada)</h1>
-        <Button 
-          onClick={handleLogoutClick} 
-          className="ml-4"
-          variant="destructive"
-        >
-          Logout
-        </Button>
-      </div>
-      {userData && (
-        <div className="bg-secondary/10 p-6 rounded-lg max-w-md w-full">
-          <h2 className="text-xl font-semibold mb-4">Informações do Usuário</h2>
-          <p><strong>Nome:</strong> {userData.name}</p>
-          <p><strong>Email:</strong> {userData.email}</p>
-          <p><strong>ID:</strong> {userData.id}</p>
-        </div>
-      )}
-    </div>
-  );
 };
 
 // Componente principal da aplicação
