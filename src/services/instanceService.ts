@@ -46,12 +46,23 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       .eq('id', data.userId)
       .single();
     
-    if (userError) throw userError;
+    if (userError) {
+      console.error('Erro ao buscar dados do usuário:', userError);
+      throw new Error('Erro ao buscar dados do usuário');
+    }
     
     if (!userData) {
       throw new Error('Usuário não encontrado');
     }
     
+    console.log('Enviando requisição para API externa com dados:', {
+      userId: data.userId,
+      name: data.name,
+      planId: data.planId,
+      email: userData.email,
+      userName: userData.name
+    });
+
     // Enviar requisição para API externa
     const response = await fetch('https://n8n-editor.teste.onlinecenter.com.br/webhook-test/criar-instancia', {
       method: 'POST',
@@ -69,17 +80,19 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Falha ao criar instância: ${response.status} ${errorText}`);
+      console.error('Resposta da API:', errorText);
+      throw new Error(`Falha ao criar instância: ${response.status} - ${errorText}`);
     }
 
     const instanceData = await response.json();
     
     // Verificar se a resposta contém os campos esperados
     if (!instanceData.qrCode || !instanceData.instanceId) {
+      console.error('Resposta inválida da API:', instanceData);
       throw new Error('Resposta inválida da API');
     }
     
-    // Depois, criar instância no banco de dados local
+    // Criar instância no banco de dados local
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + 30); // 30 dias a partir de hoje
     
@@ -92,7 +105,8 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
         expiration_date: expirationDate.toISOString(),
         status: 'pending',
         sent_messages_number: 0,
-        user_sequence_id: 1 // O trigger vai sobrescrever este valor
+        user_sequence_id: 1, // O trigger vai sobrescrever este valor
+        instance_id: instanceData.instanceId // Salvar o ID retornado pela API
       });
     
     if (instanceError) {
