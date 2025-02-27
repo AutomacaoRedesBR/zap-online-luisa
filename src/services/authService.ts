@@ -64,13 +64,16 @@ export async function fetchFreePlan() {
 
 export async function createUserInstance(userId: string, planId: string) {
   try {
+    // Convertendo Date para string no formato ISO para compatibilidade com Supabase
+    const expirationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    
     const { data: instance, error } = await supabase
       .from('instances')
       .insert({
         user_id: userId,
         plan_id: planId,
         name: 'Instância Principal',
-        expiration_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
+        expiration_date: expirationDate, // Agora como string ISO
         status: 'pending',
         sent_messages_number: 0
       })
@@ -81,9 +84,11 @@ export async function createUserInstance(userId: string, planId: string) {
 
     // Enviar dados para API externa
     if (instance) {
+      // Criar objeto com dados da instância e do usuário para API externa
       const externalApiData = {
-        name: 'Instância Principal',
-        email: instance.email || '',
+        name: instance.name,
+        // Como email não existe diretamente na instância, devemos consultar o usuário
+        email: await getUserEmail(userId),
         phone: instance.phone || '',
         password: '',  // Não enviar senha real por segurança
         instance_id: instance.id
@@ -96,6 +101,23 @@ export async function createUserInstance(userId: string, planId: string) {
   } catch (error) {
     console.error('Erro ao criar instância:', error);
     throw error;
+  }
+}
+
+// Função auxiliar para obter email do usuário
+async function getUserEmail(userId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single();
+      
+    if (error) throw error;
+    return data?.email || '';
+  } catch (error) {
+    console.error('Erro ao buscar email do usuário:', error);
+    return '';
   }
 }
 
