@@ -110,7 +110,22 @@ export async function registerUser(userData: RegisterData) {
 
 export async function loginUser(credentials: LoginData) {
   try {
-    // Primeiro, vamos verificar se existe um usuário com este email
+    console.log("Credenciais recebidas:", credentials.email);
+    
+    // Primeiro buscar o usuário pelo email apenas para depuração
+    const { data: userCheck, error: checkError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', credentials.email)
+      .maybeSingle();
+      
+    console.log("Usuário encontrado pelo email:", userCheck);
+    
+    if (checkError) {
+      console.error("Erro ao verificar email:", checkError);
+    }
+    
+    // Agora buscar com email e senha
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -118,9 +133,17 @@ export async function loginUser(credentials: LoginData) {
       .eq('password', credentials.password)
       .maybeSingle();
     
-    if (error) throw error;
-    if (!data) throw new Error('Email ou senha incorretos');
+    if (error) {
+      console.error("Erro na consulta:", error);
+      throw error;
+    }
     
+    if (!data) {
+      console.log("Nenhum usuário encontrado com essas credenciais");
+      throw new Error('Email ou senha incorretos');
+    }
+    
+    console.log("Login bem-sucedido:", data);
     return data;
   } catch (error: any) {
     console.error('Erro ao fazer login:', error);

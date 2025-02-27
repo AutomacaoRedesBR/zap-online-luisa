@@ -7,7 +7,8 @@ import {
   LoginData, 
   createUserInstance,
   loginUser,
-  getUserInstance 
+  getUserInstance,
+  registerUser 
 } from '@/services/authService';
 import { sendToExternalAPI } from '@/services/externalApi';
 
@@ -23,28 +24,31 @@ export function useAuth() {
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      // 1. Gerar um ID temporário para a instância
-      const tempInstanceId = crypto.randomUUID();
+      // Primeiro registrar o usuário no banco de dados
+      const registeredUser = await registerUser(data);
       
-      // 2. Enviar dados diretamente para a API externa
-      const apiResponse = await sendToExternalAPI({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        password: data.password,
-        instance_id: tempInstanceId
-      });
+      if (!registeredUser || !registeredUser.id) {
+        throw new Error("Falha ao registrar usuário");
+      }
       
-      // 3. Se a API retornou sucesso, atualizar o estado
+      // Se o plano gratuito existir, criar uma instância para o usuário
+      if (freePlanId) {
+        const instance = await createUserInstance(registeredUser.id, freePlanId);
+        if (instance) {
+          setInstanceId(instance.id);
+        }
+      }
+      
+      // Atualizar o estado da aplicação
       setUserData({
+        id: registeredUser.id,
         name: data.name,
         email: data.email,
         phone: data.phone || '',
       });
       
-      setInstanceId(tempInstanceId);
       setRegistrationSuccessful(true);
-      toast.success("Conta criada com sucesso! Dados enviados para API externa.");
+      toast.success("Conta criada com sucesso!");
       
     } catch (error: any) {
       console.error('Erro ao registrar:', error);
@@ -57,27 +61,35 @@ export function useAuth() {
   const handleLogin = async (data: LoginData) => {
     setIsLoading(true);
     try {
+      console.log("Tentando login com:", data);
+      
       // 1. Autenticar usuário usando a tabela Users
       const user = await loginUser(data);
       
+      console.log("Usuário autenticado:", user);
+      
       // 2. Obter a primeira instância do usuário (se existir)
-      const instanceData = await getUserInstance(user.id);
-      
-      // 3. Se existir uma instância, armazenar seu ID
-      if (instanceData) {
-        setInstanceId(instanceData.id);
+      if (user && user.id) {
+        const instanceData = await getUserInstance(user.id);
+        
+        // 3. Se existir uma instância, armazenar seu ID
+        if (instanceData) {
+          setInstanceId(instanceData.id);
+        }
+        
+        // 4. Atualizar o estado da aplicação
+        setUserData({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+        });
+        
+        setIsLoggedIn(true);
+        toast.success("Login realizado com sucesso!");
+      } else {
+        throw new Error("Usuário não encontrado");
       }
-      
-      // 4. Atualizar o estado da aplicação
-      setUserData({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-      });
-      
-      setIsLoggedIn(true);
-      toast.success("Login realizado com sucesso!");
       
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
