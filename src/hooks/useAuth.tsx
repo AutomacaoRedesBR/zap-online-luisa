@@ -99,9 +99,9 @@ export function useAuth() {
           phone: '',
         };
         
-        // Importante: primeiro definir isLoggedIn para true, depois userData
-        setIsLoggedIn(true);
+        // Importante: primeiro definir os dados do usuário, depois o status de login
         setUserData(user);
+        setIsLoggedIn(true);
         
         toast.success("Login realizado com sucesso!");
         return true;
@@ -120,7 +120,7 @@ export function useAuth() {
 
   const handleLogout = () => {
     console.log("Fazendo logout...");
-    // Importante: primeiro limpar userData, depois definir isLoggedIn como false
+    // Limpar todos os dados de autenticação
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');

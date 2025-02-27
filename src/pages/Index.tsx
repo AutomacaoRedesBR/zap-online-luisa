@@ -37,7 +37,7 @@ const Index = () => {
     console.log("Index - Verificando login:", { isLoggedIn, userData });
     if (isLoggedIn && userData) {
       console.log("Index - Redirecionando para Home");
-      navigate('/home', { replace: true });
+      navigate('/home');
     }
   }, [isLoggedIn, userData, navigate]);
 
@@ -51,7 +51,12 @@ const Index = () => {
     console.log("Index - Processando login");
     const success = await handleLogin(data);
     console.log("Index - Resultado do login:", success);
-    // O redirecionamento será feito pelo useEffect acima quando isLoggedIn mudar
+    
+    // Forçar redirecionamento após login bem-sucedido
+    if (success) {
+      console.log("Index - Forçando redirecionamento após login bem-sucedido");
+      navigate('/home');
+    }
   };
 
   return (
