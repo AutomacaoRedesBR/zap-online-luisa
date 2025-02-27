@@ -73,9 +73,10 @@ export async function createUserInstance(userId: string, planId: string) {
         user_id: userId,
         plan_id: planId,
         name: 'Instância Principal',
-        expiration_date: expirationDate, // Agora como string ISO
+        expiration_date: expirationDate,
         status: 'pending',
-        sent_messages_number: 0
+        sent_messages_number: 0,
+        user_sequence_id: 1 // O trigger vai sobrescrever este valor
       })
       .select()
       .single();
@@ -87,7 +88,6 @@ export async function createUserInstance(userId: string, planId: string) {
       // Criar objeto com dados da instância e do usuário para API externa
       const externalApiData = {
         name: instance.name,
-        // Como email não existe diretamente na instância, devemos consultar o usuário
         email: await getUserEmail(userId),
         phone: instance.phone || '',
         password: '',  // Não enviar senha real por segurança
