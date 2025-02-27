@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -109,19 +110,23 @@ export async function registerUser(userData: RegisterData) {
 
 export async function loginUser(credentials: LoginData) {
   try {
-    // Buscar usuário pelo email e verificar a senha
+    // Buscar usuário pelo email e senha
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', credentials.email)
-      .eq('password', credentials.password) // Adicionar verificação de senha
-      .maybeSingle();
+      .eq('password', credentials.password)
+      .single();
     
-    if (error) throw error;
-    if (!data) throw new Error('Email ou senha incorretos');
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error('Email ou senha incorretos');
+      }
+      throw error;
+    }
     
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao fazer login:', error);
     throw error;
   }
