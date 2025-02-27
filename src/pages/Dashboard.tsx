@@ -173,10 +173,13 @@ const Dashboard = () => {
             </DialogDescription>
           </DialogHeader>
 
-          {qrCodeData ? (
+          {qrCodeData && instanceId ? (
             <div className="py-4">
               <h3 className="text-lg font-medium mb-4 text-center">Escaneie o QR Code para ativar sua instância</h3>
-              <QRCodeDisplay qrCodeData={qrCodeData} />
+              <QRCodeDisplay 
+                qrCodeData={qrCodeData} 
+                instanceId={instanceId} 
+              />
               <p className="text-sm text-gray-500 mt-4 text-center">
                 ID da instância: {instanceId}
               </p>
