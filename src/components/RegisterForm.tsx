@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Phone, User, Loader2, Lock } from 'lucide-react';
+import { Mail, Phone, User, Loader2 } from 'lucide-react';
 
 interface RegisterFormProps {
-  onSubmit: (data: { name: string; email: string; phone: string; password: string }) => void;
+  onSubmit: (data: { name: string; email: string; phone: string }) => void;
   onToggleForm: () => void;
   isLoading?: boolean;
 }
@@ -16,11 +16,10 @@ export const RegisterForm = ({ onSubmit, onToggleForm, isLoading = false }: Regi
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, email, phone, password });
+    onSubmit({ name, email, phone });
   };
 
   return (
@@ -75,22 +74,6 @@ export const RegisterForm = ({ onSubmit, onToggleForm, isLoading = false }: Regi
                 className="pl-10"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="Sua senha"
-                className="pl-10"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
               />
