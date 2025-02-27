@@ -21,27 +21,30 @@ export function useAuth() {
 
   // Verificar se há dados de login no localStorage ao iniciar
   useEffect(() => {
-    const storedUser = localStorage.getItem('userData');
-    const storedLoginState = localStorage.getItem('isLoggedIn');
-    
-    if (storedUser && storedLoginState === 'true') {
-      setUserData(JSON.parse(storedUser));
-      setIsLoggedIn(true);
-      console.log("Auth - Recuperou credenciais do localStorage:", { storedUser, storedLoginState });
-    }
+    const checkAuth = () => {
+      const storedUser = localStorage.getItem('userData');
+      const storedLoginState = localStorage.getItem('isLoggedIn');
+      
+      if (storedUser && storedLoginState === 'true') {
+        const parsedUser = JSON.parse(storedUser);
+        setUserData(parsedUser);
+        setIsLoggedIn(true);
+        console.log("Auth - Recuperou credenciais do localStorage");
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      // Primeiro registrar o usuário no banco de dados
       const registeredUser = await registerUser(data);
       
       if (!registeredUser || !registeredUser.id) {
         throw new Error("Falha ao registrar usuário");
       }
       
-      // Se o plano gratuito existir, criar uma instância para o usuário
       if (freePlanId) {
         const instance = await createUserInstance(registeredUser.id, freePlanId);
         if (instance) {
@@ -49,7 +52,6 @@ export function useAuth() {
         }
       }
       
-      // Atualizar o estado da aplicação
       setUserData({
         id: registeredUser.id,
         name: data.name,
@@ -68,36 +70,33 @@ export function useAuth() {
     }
   };
 
-  const handleLogin = async (data: LoginData) => {
+  const handleLogin = async (data: LoginData): Promise<boolean> => {
     setIsLoading(true);
     try {
-      console.log("Auth - Tentando login com API externa:", data);
+      console.log("Auth - Iniciando processo de login com API externa");
       
-      // Enviar credenciais para a API externa
       const apiResponse = await loginWithExternalAPI({
         email: data.email,
         password: data.password
       });
       
-      // Verificar se o login foi bem-sucedido
       if (apiResponse && apiResponse.logged === true) {
-        console.log("Auth - Login bem-sucedido, atualizando estado...");
+        console.log("Auth - Login bem-sucedido na API externa");
         
-        // Usuário se autenticou com sucesso
         const user = {
-          id: Date.now().toString(), // ID temporário apenas para a sessão
-          name: data.email.split('@')[0], // Nome temporário baseado no email
+          id: Date.now().toString(),
+          name: data.email.split('@')[0],
           email: data.email,
           phone: '',
         };
         
-        // Salvar o usuário no localStorage para persistir a sessão
-        localStorage.setItem('userData', JSON.stringify(user));
-        localStorage.setItem('isLoggedIn', 'true');
-        
-        // Atualizar o estado
+        // Primeiro atualizar o estado
         setUserData(user);
         setIsLoggedIn(true);
+        
+        // Depois persistir no localStorage
+        localStorage.setItem('userData', JSON.stringify(user));
+        localStorage.setItem('isLoggedIn', 'true');
         
         toast.success("Login realizado com sucesso!");
         return true;
