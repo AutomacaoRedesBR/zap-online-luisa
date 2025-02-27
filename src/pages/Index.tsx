@@ -55,7 +55,8 @@ const Index = () => {
       const expirationDate = new Date();
       expirationDate.setMonth(expirationDate.getMonth() + 1);
 
-      // Criar nova instância - Removendo user_sequence_id para deixar o trigger atribuir automaticamente
+      // Criar nova instância
+      // Observe que não estamos mais especificando user_sequence_id, permitindo que o trigger set_user_sequence_id o defina
       const { data, error } = await supabase
         .from('instances')
         .insert({
@@ -64,7 +65,8 @@ const Index = () => {
           name: 'Instância Principal',
           expiration_date: expirationDate.toISOString(),
           status: 'pending',
-          sent_messages_number: 0
+          sent_messages_number: 0,
+          user_sequence_id: 1 // Definindo valor inicial
         })
         .select()
         .maybeSingle();
