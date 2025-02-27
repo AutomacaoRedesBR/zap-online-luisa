@@ -56,7 +56,6 @@ const Index = () => {
       expirationDate.setMonth(expirationDate.getMonth() + 1);
 
       // Criar nova instância
-      // Observe que não estamos mais especificando user_sequence_id, permitindo que o trigger set_user_sequence_id o defina
       const { data, error } = await supabase
         .from('instances')
         .insert({
