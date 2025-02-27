@@ -8,7 +8,8 @@ import {
   createUserInstance,
   registerUser 
 } from '@/services/authService';
-import { loginWithExternalAPI } from '@/services/externalApi';
+import { loginWithExternalAPI, registerWithExternalAPI } from '@/services/externalApi';
+import { supabase } from "@/integrations/supabase/client";
 
 export function useAuth() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -40,25 +41,62 @@ export function useAuth() {
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      const registeredUser = await registerUser(data);
-      
-      if (!registeredUser || !registeredUser.id) {
-        throw new Error("Falha ao registrar usuário");
-      }
-      
-      if (freePlanId) {
-        const instance = await createUserInstance(registeredUser.id, freePlanId);
-        if (instance) {
-          setInstanceId(instance.id);
-        }
-      }
-      
-      setUserData({
-        id: registeredUser.id,
+      // Enviar dados para a API externa para registro
+      const registeredUser = await registerWithExternalAPI({
         name: data.name,
         email: data.email,
         phone: data.phone || '',
+        password: data.password
       });
+      
+      if (!registeredUser) {
+        throw new Error("Falha ao registrar usuário");
+      }
+
+      // Também vamos criar um usuário no Supabase para autenticação
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            phone: data.phone || ''
+          }
+        }
+      });
+
+      if (authError) {
+        console.warn("Erro ao registrar no Supabase Auth:", authError);
+        // Não vamos falhar o registro só por causa do Supabase Auth
+      } else {
+        console.log("Usuário registrado no Supabase Auth:", authData);
+      }
+      
+      // Agora vamos criar uma instância gratuita para o usuário se tivermos um plano gratuito
+      if (freePlanId && authData.user) {
+        try {
+          const instance = await createUserInstance(authData.user.id, freePlanId);
+          if (instance) {
+            setInstanceId(instance.id);
+          }
+        } catch (instanceError) {
+          console.error("Erro ao criar instância:", instanceError);
+          // Não vamos falhar o registro só porque não conseguimos criar a instância
+        }
+      }
+      
+      // Definir dados do usuário no estado
+      const user = {
+        id: authData.user?.id || registeredUser.id || Date.now().toString(),
+        name: data.name,
+        email: data.email,
+        phone: data.phone || '',
+      };
+      
+      setUserData(user);
+      localStorage.setItem('userData', JSON.stringify(user));
+      localStorage.setItem('isLoggedIn', 'true');
+      setIsLoggedIn(true);
       
       setRegistrationSuccessful(true);
       toast.success("Conta criada com sucesso!");
@@ -84,11 +122,35 @@ export function useAuth() {
       if (apiResponse && apiResponse.logged === true) {
         console.log("Auth - Login bem-sucedido na API externa");
         
-        const user = {
-          id: Date.now().toString(),
-          name: data.email.split('@')[0],
+        // Também autenticar no Supabase para ter acesso ao banco de dados
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: data.email,
-          phone: '',
+          password: data.password
+        });
+
+        if (authError) {
+          console.warn("Erro ao autenticar no Supabase:", authError);
+          // Tentar criá-lo caso não exista
+          const { data: signupData, error: signupError } = await supabase.auth.signUp({
+            email: data.email,
+            password: data.password
+          });
+
+          if (signupError) {
+            console.error("Erro ao criar usuário no Supabase:", signupError);
+            // Não falhar o login por isso
+          } else {
+            console.log("Usuário criado no Supabase:", signupData);
+          }
+        } else {
+          console.log("Autenticado no Supabase:", authData);
+        }
+        
+        const user = {
+          id: authData?.user?.id || Date.now().toString(),
+          name: apiResponse.name || data.email.split('@')[0],
+          email: data.email,
+          phone: apiResponse.phone || '',
         };
         
         // Atualizar localStorage primeiro
@@ -116,11 +178,16 @@ export function useAuth() {
 
   const handleLogout = useCallback(() => {
     console.log("Fazendo logout...");
-    // Primeiro limpar o localStorage
+    // Também fazer logout do Supabase
+    supabase.auth.signOut()
+      .then(() => console.log("Logout do Supabase realizado"))
+      .catch(error => console.error("Erro ao fazer logout do Supabase:", error));
+    
+    // Limpar o localStorage
     localStorage.removeItem('userData');
     localStorage.removeItem('isLoggedIn');
     
-    // Depois atualizar os estados
+    // Atualizar os estados
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');
