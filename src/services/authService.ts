@@ -110,20 +110,16 @@ export async function registerUser(userData: RegisterData) {
 
 export async function loginUser(credentials: LoginData) {
   try {
-    // Buscar usuário pelo email e senha
+    // Primeiro, vamos verificar se existe um usuário com este email
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', credentials.email)
       .eq('password', credentials.password)
-      .single();
+      .maybeSingle();
     
-    if (error) {
-      if (error.code === 'PGRST116') {
-        throw new Error('Email ou senha incorretos');
-      }
-      throw error;
-    }
+    if (error) throw error;
+    if (!data) throw new Error('Email ou senha incorretos');
     
     return data;
   } catch (error: any) {
