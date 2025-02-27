@@ -9,7 +9,123 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      instances: {
+        Row: {
+          created_at: string
+          evo_api_key: string | null
+          expiration_date: string
+          id: string
+          name: string
+          phone: string | null
+          plan_id: string
+          sent_messages_number: number
+          sequence_id: number
+          status: string | null
+          updated_at: string
+          user_id: string
+          user_sequence_id: number
+        }
+        Insert: {
+          created_at?: string
+          evo_api_key?: string | null
+          expiration_date: string
+          id?: string
+          name: string
+          phone?: string | null
+          plan_id: string
+          sent_messages_number?: number
+          sequence_id?: number
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          user_sequence_id: number
+        }
+        Update: {
+          created_at?: string
+          evo_api_key?: string | null
+          expiration_date?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          plan_id?: string
+          sent_messages_number?: number
+          sequence_id?: number
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          user_sequence_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instances_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          max_messages_number: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_messages_number: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_messages_number?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
