@@ -44,7 +44,7 @@ const Home = ({ userData, onLogout }: HomeProps) => {
     <div className="min-h-screen w-full flex flex-col items-center justify-start p-4 bg-gradient-to-br from-gray-50 to-gray-100">
       <Card className="w-full max-w-4xl glass-card fade-in mt-8">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-2xl font-bold">Bem-vindo, {userData.name}</CardTitle>
+          <CardTitle className="text-2xl font-bold">Olá, {userData.name}! Seja bem-vindo(a) ao painel.</CardTitle>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
           </Button>
