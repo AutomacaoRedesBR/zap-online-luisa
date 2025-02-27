@@ -23,7 +23,7 @@ export interface RegisterData {
 
 export async function registerUser(userData: RegisterData) {
   try {
-    // Primeiro registrar o usuário no banco de dados
+    // Registrar o usuário na tabela users
     const { data: newUser, error } = await supabase
       .from('users')
       .insert({
@@ -32,10 +32,17 @@ export async function registerUser(userData: RegisterData) {
         phone: userData.phone,
         password: userData.password
       })
-      .select()
+      .select('id, name, email, phone')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao registrar usuário:', error);
+      throw error;
+    }
+    
+    if (!newUser) {
+      throw new Error('Falha ao criar usuário');
+    }
     
     console.log("Usuário registrado com sucesso:", newUser);
 
@@ -67,6 +74,17 @@ export async function createUserInstance(userId: string, planId: string) {
     // Convertendo Date para string no formato ISO para compatibilidade com Supabase
     const expirationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     
+    // Verificar se o usuário existe antes de criar a instância
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      throw new Error('Usuário não encontrado');
+    }
+
     const { data: instance, error } = await supabase
       .from('instances')
       .insert({
@@ -76,7 +94,7 @@ export async function createUserInstance(userId: string, planId: string) {
         expiration_date: expirationDate,
         status: 'pending',
         sent_messages_number: 0,
-        user_sequence_id: 1 // O trigger vai sobrescrever este valor
+        user_sequence_id: 1
       })
       .select()
       .single();
@@ -85,12 +103,10 @@ export async function createUserInstance(userId: string, planId: string) {
 
     // Enviar dados para API externa
     if (instance) {
-      // Criar objeto com dados da instância e do usuário para API externa
       const externalApiData = {
         name: instance.name,
-        email: await getUserEmail(userId),
-        phone: instance.phone || '',
-        password: '',  // Não enviar senha real por segurança
+        email: user.email,
+        phone: '',
         instance_id: instance.id
       };
 
