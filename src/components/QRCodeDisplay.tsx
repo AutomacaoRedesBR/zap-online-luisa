@@ -4,37 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 interface QRCodeDisplayProps {
   instanceId: string;
-  onScanComplete: (token: string, userData: any) => void;
+  onScanComplete?: (token: string, userData: any) => void;
+  qrCodeUrl?: string;
+  qrCodeData?: string;
 }
 
-export const QRCodeDisplay = ({ instanceId, onScanComplete }: QRCodeDisplayProps) => {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const apiKey = 'YOUR_EVOLUTION_MANAGER_API_KEY'; // Substitua pela sua API key
+export const QRCodeDisplay = ({ instanceId, onScanComplete, qrCodeUrl, qrCodeData }: QRCodeDisplayProps) => {
+  const [displayUrl, setDisplayUrl] = useState<string>('');
 
   useEffect(() => {
-    // Simulação da geração do QR Code
-    // Aqui você deve integrar com a API real do Evolution Manager
-    const generateQRCode = async () => {
-      try {
-        // Simula a chamada à API
-        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${instanceId}`);
-        
-        // Simula o recebimento do token após scan
-        // Na implementação real, você deve usar websockets ou polling
-        setTimeout(() => {
-          onScanComplete('sample-token-123', {
-            name: 'Usuário Exemplo',
-            email: 'usuario@exemplo.com',
-            phone: '(11) 99999-9999'
-          });
-        }, 5000);
-      } catch (error) {
-        console.error('Erro ao gerar QR Code:', error);
-      }
-    };
-
-    generateQRCode();
-  }, [instanceId]);
+    if (qrCodeData) {
+      setDisplayUrl(qrCodeData);
+    } else if (qrCodeUrl) {
+      setDisplayUrl(qrCodeUrl);
+    } else {
+      setDisplayUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${instanceId}`);
+    }
+  }, [instanceId, qrCodeUrl, qrCodeData]);
 
   return (
     <Card className="w-full max-w-md glass-card fade-in">
@@ -45,9 +31,9 @@ export const QRCodeDisplay = ({ instanceId, onScanComplete }: QRCodeDisplayProps
         </CardDescription>
       </CardHeader>
       <CardContent className="flex justify-center p-6">
-        {qrCodeUrl && (
+        {displayUrl && (
           <img
-            src={qrCodeUrl}
+            src={displayUrl}
             alt="QR Code"
             className="w-64 h-64"
           />
