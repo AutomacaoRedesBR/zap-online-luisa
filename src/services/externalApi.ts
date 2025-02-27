@@ -12,6 +12,13 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterUserData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
 export async function sendToExternalAPI(data: ExternalApiData) {
   try {
     console.log('Enviando dados para API externa:', data);
@@ -64,6 +71,42 @@ export async function loginWithExternalAPI(credentials: LoginCredentials) {
     return userData;
   } catch (error) {
     console.error('Erro ao fazer login com API externa:', error);
+    throw error;
+  }
+}
+
+export async function registerWithExternalAPI(userData: RegisterUserData) {
+  try {
+    console.log('Enviando dados de registro para API externa:', userData);
+    
+    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Resposta da API não ok:', response.status, errorText);
+      throw new Error(`Falha ao registrar usuário: ${response.status} ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Resposta de registro da API externa:', responseData);
+    
+    // Armazenar os dados do usuário no localStorage para uso posterior
+    localStorage.setItem('userData', JSON.stringify({
+      id: responseData.id || userData.email, // Usa o ID retornado ou o email como fallback
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone
+    }));
+    
+    return responseData;
+  } catch (error) {
+    console.error('Erro ao registrar com API externa:', error);
     throw error;
   }
 }
