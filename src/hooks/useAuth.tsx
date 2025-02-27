@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { 
   RegisterData, 
@@ -18,6 +18,17 @@ export function useAuth() {
   const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
   const [freePlanId, setFreePlanId] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Verificar se há dados de login no localStorage ao iniciar
+  useEffect(() => {
+    const storedUser = localStorage.getItem('userData');
+    const storedLoginState = localStorage.getItem('isLoggedIn');
+    
+    if (storedUser && storedLoginState === 'true') {
+      setUserData(JSON.parse(storedUser));
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
@@ -79,6 +90,10 @@ export function useAuth() {
           phone: '',
         };
         
+        // Salvar o usuário no localStorage para persistir a sessão
+        localStorage.setItem('userData', JSON.stringify(user));
+        localStorage.setItem('isLoggedIn', 'true');
+        
         setUserData(user);
         setIsLoggedIn(true);
         
@@ -99,6 +114,8 @@ export function useAuth() {
 
   const handleLogout = () => {
     console.log("Fazendo logout...");
+    localStorage.removeItem('userData');
+    localStorage.removeItem('isLoggedIn');
     setUserData(null);
     setIsLoggedIn(false);
     setInstanceId('');
