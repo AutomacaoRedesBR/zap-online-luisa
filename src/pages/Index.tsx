@@ -34,10 +34,10 @@ const Index = () => {
 
   // Verificar se o usuário está logado e redirecionar se estiver
   useEffect(() => {
-    console.log("Index - Verificando login:", { isLoggedIn, userData });
+    console.log("Login - Verificando login:", { isLoggedIn, userData });
     if (isLoggedIn && userData) {
-      console.log("Index - Redirecionando para Home");
-      navigate('/home');
+      console.log("Login - Redirecionando para Dashboard");
+      navigate('/dashboard');
     }
   }, [isLoggedIn, userData, navigate]);
 
@@ -48,14 +48,14 @@ const Index = () => {
 
   // Função para processar o login com redirecionamento
   const processLogin = async (data: { email: string; password: string }) => {
-    console.log("Index - Processando login");
+    console.log("Login - Processando login");
     const success = await handleLogin(data);
-    console.log("Index - Resultado do login:", success);
+    console.log("Login - Resultado do login:", success);
     
     // Forçar redirecionamento após login bem-sucedido
     if (success) {
-      console.log("Index - Forçando redirecionamento após login bem-sucedido");
-      navigate('/home');
+      console.log("Login - Forçando redirecionamento após login bem-sucedido");
+      navigate('/dashboard');
     }
   };
 
