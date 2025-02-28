@@ -83,11 +83,27 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   try {
     console.log('Iniciando criação de instância para usuário com ID:', data.userId);
     
-    // Garantir que temos um ID de usuário válido
-    if (!data.userId) {
-      console.error('ID do usuário não fornecido ou inválido:', data.userId);
-      throw new Error('ID do usuário não fornecido');
+    // Verificar se temos um ID de usuário válido
+    if (!data.userId || data.userId.trim() === '') {
+      console.error('ID do usuário não fornecido ou vazio:', data.userId);
+      
+      // Tentar recuperar do localStorage como fallback
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        const userData = JSON.parse(storedUserData);
+        if (userData && userData.id && userData.id.trim() !== '') {
+          console.log('Usando ID do usuário do localStorage como fallback:', userData.id);
+          data.userId = userData.id;
+        } else {
+          throw new Error('ID do usuário não encontrado no localStorage');
+        }
+      } else {
+        throw new Error('ID do usuário não fornecido e não há dados no localStorage');
+      }
     }
+    
+    // Log adicional para depuração
+    console.log('Confirmação do ID de usuário que será enviado:', data.userId);
     
     // Verificar se o ID é um UUID válido (para debug)
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -130,7 +146,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     try {
       // Dados a serem enviados para a API externa
       const requestData = {
-        user_id: data.userId, // Usar o ID exato recebido como parâmetro
+        user_id: data.userId, // Usar o ID exato recebido como parâmetro ou recuperado do localStorage
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { Plan } from "@/services/instanceService";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CreateInstanceDialogProps {
   open: boolean;
@@ -43,6 +44,9 @@ export const CreateInstanceDialog = ({
     "basic-plan": "741d4a3d-19b5-4a24-93ae-9b4890a40f7a",
     "premium-plan": "8d2c33c9-a6b9-448e-b76d-9c1ba92c5f03"
   };
+  
+  // Obter dados do usuário atual
+  const { userData } = useAuth();
   
   // Estado local para armazenar o UUID real
   const [actualPlanUUID, setActualPlanUUID] = useState<string>("");
@@ -125,6 +129,14 @@ export const CreateInstanceDialog = ({
                 </p>
               )}
             </div>
+            {userData && (
+              <div className="text-xs text-gray-500 mt-1 p-2 bg-gray-100 rounded">
+                <p><strong>Dados do usuário:</strong></p>
+                <p>ID: {userData.id || "Não disponível"}</p>
+                <p>Nome: {userData.name || "Não disponível"}</p>
+                <p>Email: {userData.email || "Não disponível"}</p>
+              </div>
+            )}
           </div>
         )}
 

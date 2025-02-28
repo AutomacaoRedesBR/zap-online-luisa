@@ -49,6 +49,7 @@ const Dashboard = () => {
 
     // Verificar se o userData existe e tem um ID válido
     if (!userData || !userData.id) {
+      console.error("Dados do usuário ausentes ou ID inválido:", userData);
       toast.error("ID do usuário não disponível. Por favor, faça login novamente.");
       return;
     }
@@ -57,6 +58,14 @@ const Dashboard = () => {
     
     setIsCreatingInstance(true);
     try {
+      // Verificar mais uma vez se o ID não é vazio antes de enviar
+      if (!userData.id || userData.id.trim() === "") {
+        throw new Error("ID do usuário está vazio");
+      }
+      
+      console.log("Confirmação - userData:", userData);
+      console.log("Confirmação - ID para criação de instância:", userData.id);
+      
       const result = await createInstanceForUser({
         userId: userData.id, // Garantir que este ID está sendo passado corretamente
         name: instanceName,
