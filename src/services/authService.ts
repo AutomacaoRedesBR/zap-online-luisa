@@ -1,5 +1,6 @@
 
 import { sendToExternalAPI, registerWithExternalAPI } from "./externalApi";
+import { isValidUUID, getUserDataFromStorage } from "@/utils/validationUtils";
 
 export interface UserData {
   id?: string;
@@ -39,8 +40,7 @@ export async function registerUser(userData: RegisterData) {
     console.log('ID do usuário retornado pela API:', response.id);
     
     // Validar se é um UUID válido
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(response.id)) {
+    if (!isValidUUID(response.id)) {
       console.warn('O ID retornado não parece ser um UUID válido:', response.id);
     }
     
@@ -77,12 +77,10 @@ export async function createUserInstance(userId: string, planId: string) {
     const expirationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     
     // Recuperar email do usuário do localStorage
-    const storedUser = localStorage.getItem('userData');
-    if (!storedUser) {
+    const userData = getUserDataFromStorage();
+    if (!userData) {
       throw new Error('Dados do usuário não encontrados');
     }
-    
-    const userData = JSON.parse(storedUser);
     
     // Dados para enviar à API externa
     const externalApiData = {
@@ -115,10 +113,9 @@ export async function createUserInstance(userId: string, planId: string) {
 // Função auxiliar para obter email do usuário
 function getUserEmail(userId: string): string {
   try {
-    const storedUser = localStorage.getItem('userData');
-    if (!storedUser) return '';
+    const userData = getUserDataFromStorage();
+    if (!userData) return '';
     
-    const userData = JSON.parse(storedUser);
     return userData.email || '';
   } catch (error) {
     console.error('Erro ao buscar email do usuário:', error);
@@ -129,8 +126,8 @@ function getUserEmail(userId: string): string {
 export async function getUserInstance(userId: string) {
   // Poderíamos buscar isso da sua API externa
   // Por enquanto, vamos retornar uma instância fictícia
-  const storedUser = localStorage.getItem('userData');
-  if (!storedUser) return null;
+  const userData = getUserDataFromStorage();
+  if (!userData) return null;
   
   return {
     id: `instance-${Date.now()}`,
