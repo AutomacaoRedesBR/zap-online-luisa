@@ -112,9 +112,9 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     
     // Enviar requisição para API externa
     try {
-      // Usando user_id em vez de userId para corresponder ao formato esperado pelo backend
+      // Usando o UUID do usuário diretamente - correção crítica
       const requestData = {
-        user_id: userData.id,
+        user_id: userData.id, // Usando o ID exato do usuário do localStorage
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,
