@@ -1,83 +1,14 @@
 
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
+import { Instance, CreateInstanceData, InstanceResponse } from "./types/instance.types";
+import { PLAN_UUIDS } from "./planService";
+import { isValidUUID, getUserIdFromLocalStorage, getUserDataFromLocalStorage } from "./utils/instanceUtils";
+import { fetchUserInstances } from "./userInstanceService";
 
-export interface Plan {
-  id: string;
-  name: string;
-  description: string | null;
-  max_messages_number: number;
-}
-
-export interface CreateInstanceData {
-  userId: string;
-  name: string;
-  planId: string;
-}
-
-export interface InstanceResponse {
-  qrCode: string;
-  instanceId: string;
-}
-
-export interface Instance {
-  id: string;
-  user_id: string;
-  plan_id: string;
-  name: string;
-  sequence_id: number;
-  user_sequence_id: number;
-  phone: string | null;
-  evo_api_key: string;
-  sent_messages_number: number;
-  expiration_date: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// Dados fictícios de planos (poderia vir da sua API externa)
-const PLANS: Plan[] = [
-  {
-    id: "free-plan",
-    name: "Free",
-    description: "Plano gratuito com recursos básicos",
-    max_messages_number: 100
-  },
-  {
-    id: "basic-plan",
-    name: "Básico",
-    description: "Plano com recursos intermediários",
-    max_messages_number: 1000
-  },
-  {
-    id: "premium-plan",
-    name: "Premium",
-    description: "Plano com todos os recursos",
-    max_messages_number: 10000
-  }
-];
-
-// Mapeamento dos IDs de plano para UUIDs reais
-const PLAN_UUIDS: Record<string, string> = {
-  "free-plan": "95c10fdd-b92d-493a-a25d-3fee817c950a",
-  "basic-plan": "741d4a3d-19b5-4a24-93ae-9b4890a40f7a",
-  "premium-plan": "8d2c33c9-a6b9-448e-b76d-9c1ba92c5f03"
-};
-
-export async function fetchPlans(): Promise<Plan[]> {
-  try {
-    // Simula uma chamada para API externa
-    // Em produção, você faria uma chamada real para sua API externa
-    return new Promise(resolve => {
-      setTimeout(() => resolve(PLANS), 300);
-    });
-  } catch (error: any) {
-    console.error('Erro ao buscar planos:', error);
-    toast.error(`Falha ao carregar planos: ${error.message}`);
-    return [];
-  }
-}
+export { fetchUserInstances } from "./userInstanceService";
+export type { Plan, CreateInstanceData, InstanceResponse, Instance } from "./types/instance.types";
+export { fetchPlans, PLAN_UUIDS } from "./planService";
 
 export async function createInstanceForUser(data: CreateInstanceData): Promise<InstanceResponse> {
   try {
@@ -88,15 +19,10 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       console.error('ID do usuário não fornecido ou vazio:', data.userId);
       
       // Tentar recuperar do localStorage como fallback
-      const storedUserData = localStorage.getItem('userData');
-      if (storedUserData) {
-        const userData = JSON.parse(storedUserData);
-        if (userData && userData.id && userData.id.trim() !== '') {
-          console.log('Usando ID do usuário do localStorage como fallback:', userData.id);
-          data.userId = userData.id;
-        } else {
-          throw new Error('ID do usuário não encontrado no localStorage');
-        }
+      const userId = getUserIdFromLocalStorage();
+      if (userId) {
+        console.log('Usando ID do usuário do localStorage como fallback:', userId);
+        data.userId = userId;
       } else {
         throw new Error('ID do usuário não fornecido e não há dados no localStorage');
       }
@@ -106,8 +32,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     console.log('Confirmação do ID de usuário que será enviado:', data.userId);
     
     // Verificar se o ID é um UUID válido (para debug)
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(data.userId)) {
+    if (!isValidUUID(data.userId)) {
       console.warn('O ID fornecido não parece ser um UUID válido:', data.userId);
     }
     
@@ -130,12 +55,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     const instanceId = uuidv4();
     
     // Recuperar dados do usuário do localStorage (apenas para email e nome)
-    const storedUser = localStorage.getItem('userData');
-    if (!storedUser) {
-      throw new Error('Dados do usuário não encontrados');
-    }
-    
-    const userData = JSON.parse(storedUser);
+    const userData = getUserDataFromLocalStorage();
     
     // Verificar se temos dados suficientes para criar a instância
     if (!userData || !userData.email) {
@@ -196,72 +116,5 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   } catch (error: any) {
     console.error('Erro ao criar instância:', error);
     throw error;
-  }
-}
-
-// Função para buscar as instâncias do usuário garantindo que sempre usa o ID do localStorage
-export async function fetchUserInstances(userId: string): Promise<Instance[]> {
-  try {
-    console.log('Buscando instâncias para usuário com ID:', userId);
-    
-    // SEMPRE verificar localStorage primeiro, independente do userId passado como parâmetro
-    let userIdToUse = userId;
-    const storedUserData = localStorage.getItem('userData');
-    
-    if (storedUserData) {
-      const userData = JSON.parse(storedUserData);
-      if (userData && userData.id && userData.id.trim() !== '') {
-        console.log('Usando ID do usuário do localStorage:', userData.id);
-        userIdToUse = userData.id;
-      }
-    }
-    
-    // Verificar se o ID é válido após tentar localStorage
-    if (!userIdToUse || userIdToUse.trim() === '') {
-      throw new Error('ID do usuário não disponível nem no localStorage');
-    }
-    
-    // Verificar se o ID é um UUID válido (para debug)
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(userIdToUse)) {
-      console.warn('O ID fornecido para busca de instâncias não parece ser um UUID válido:', userIdToUse);
-    }
-    
-    // Dados para enviar à API
-    const requestData = {
-      user_id: userIdToUse  // Sempre usar o ID do localStorage
-    };
-    
-    console.log('Enviando requisição para API de instâncias com dados:', JSON.stringify(requestData));
-    
-    // Usar fetch para fazer a requisição
-    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/get-all-instances', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro na API de instâncias:', response.status, errorText);
-      throw new Error(`Erro ao buscar instâncias: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('Dados de instâncias recebidos da API:', data);
-    
-    if (data && data.instances && Array.isArray(data.instances)) {
-      // Processar os dados conforme o formato retornado pela API
-      return data.instances;
-    } else {
-      console.warn('API retornou dados em formato inesperado:', data);
-      return [];
-    }
-  } catch (error: any) {
-    console.error('Erro ao buscar instâncias:', error);
-    toast.error(`Falha ao carregar instâncias: ${error.message}`);
-    return [];
   }
 }

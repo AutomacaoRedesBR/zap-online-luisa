@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
-import { Plan } from "@/services/instanceService";
+import { Plan } from "@/services/types/instance.types";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { PLAN_UUIDS } from "@/services/planService";
 
 interface CreateInstanceDialogProps {
   open: boolean;
@@ -38,13 +39,6 @@ export const CreateInstanceDialog = ({
   qrCodeData,
   instanceId,
 }: CreateInstanceDialogProps) => {
-  // Mapear os nomes de planos para UUIDs válidos
-  const planUUIDs = {
-    "free-plan": "95c10fdd-b92d-493a-a25d-3fee817c950a",
-    "basic-plan": "741d4a3d-19b5-4a24-93ae-9b4890a40f7a",
-    "premium-plan": "8d2c33c9-a6b9-448e-b76d-9c1ba92c5f03"
-  };
-  
   // Obter dados do usuário atual
   const { userData } = useAuth();
   
@@ -53,8 +47,8 @@ export const CreateInstanceDialog = ({
   
   // Atualizar o UUID quando o planId selecionado mudar
   useEffect(() => {
-    if (selectedPlanId && planUUIDs[selectedPlanId as keyof typeof planUUIDs]) {
-      const uuid = planUUIDs[selectedPlanId as keyof typeof planUUIDs];
+    if (selectedPlanId && PLAN_UUIDS[selectedPlanId as keyof typeof PLAN_UUIDS]) {
+      const uuid = PLAN_UUIDS[selectedPlanId as keyof typeof PLAN_UUIDS];
       setActualPlanUUID(uuid);
       console.log("Selected plan ID:", selectedPlanId);
       console.log("Mapped to UUID:", uuid);
