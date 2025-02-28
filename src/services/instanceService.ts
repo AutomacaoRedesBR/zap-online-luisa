@@ -199,15 +199,28 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   }
 }
 
-// Função modificada para corrigir o formato do user_id
+// Função modificada para buscar as instâncias corretamente
 export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
     console.log('Buscando instâncias para usuário com ID:', userId);
     
     // Verificar se o ID é válido
-    if (!userId) {
-      console.error('ID do usuário não fornecido');
-      throw new Error('ID do usuário não fornecido');
+    if (!userId || userId.trim() === '') {
+      console.error('ID do usuário não fornecido ou vazio');
+      
+      // Tentar recuperar do localStorage como fallback
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        const userData = JSON.parse(storedUserData);
+        if (userData && userData.id && userData.id.trim() !== '') {
+          console.log('Usando ID do usuário do localStorage como fallback:', userData.id);
+          userId = userData.id;
+        } else {
+          throw new Error('ID do usuário não encontrado no localStorage');
+        }
+      } else {
+        throw new Error('ID do usuário não fornecido e não há dados no localStorage');
+      }
     }
     
     // Verificar se o ID é um UUID válido (para debug)
@@ -216,51 +229,41 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
       console.warn('O ID fornecido para busca de instâncias não parece ser um UUID válido:', userId);
     }
     
-    // Usar user_id em vez de userId para seguir o formato esperado pela API
-    const bodyData = {
+    // Dados para enviar à API
+    const requestData = {
       user_id: userId
     };
     
-    console.log('Enviando requisição para API com:', bodyData);
+    console.log('Enviando requisição para API de instâncias com dados:', JSON.stringify(requestData));
     
-    // Tenta usar XMLHttpRequest para evitar problemas com CORS
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://api.teste.onlinecenter.com.br/webhook/get-all-instances', true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.withCredentials = false; // Importante para CORS
-      
-      xhr.onload = function() {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            console.log('Dados de instâncias recebidos da API:', data);
-            
-            if (data && data.instances && Array.isArray(data.instances)) {
-              // Processar os dados conforme o formato retornado pela API
-              resolve(data.instances.map((item: any) => item.json));
-            } else {
-              resolve([]);
-            }
-          } catch (error) {
-            console.error('Erro ao processar resposta da API:', error);
-            reject(new Error('Erro ao processar resposta da API'));
-          }
-        } else {
-          console.error('Erro na requisição:', xhr.status, xhr.responseText);
-          reject(new Error(`Erro ao buscar instâncias: ${xhr.statusText}`));
-        }
-      };
-      
-      xhr.onerror = function() {
-        console.error('Erro de rede na requisição para API');
-        reject(new Error('Erro de conexão com o servidor'));
-      };
-      
-      xhr.send(JSON.stringify(bodyData));
+    // Usar fetch diretamente em vez de XMLHttpRequest
+    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/get-all-instances', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
     });
-  } catch (error) {
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro na API de instâncias:', response.status, errorText);
+      throw new Error(`Erro ao buscar instâncias: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Dados de instâncias recebidos da API:', data);
+    
+    if (data && data.instances && Array.isArray(data.instances)) {
+      // Processar os dados conforme o formato retornado pela API
+      return data.instances;
+    } else {
+      console.warn('API retornou dados em formato inesperado:', data);
+      return [];
+    }
+  } catch (error: any) {
     console.error('Erro ao buscar instâncias:', error);
-    throw error;
+    toast.error(`Falha ao carregar instâncias: ${error.message}`);
+    return [];
   }
 }

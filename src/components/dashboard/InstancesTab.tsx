@@ -95,6 +95,8 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
     );
   }
 
+  console.log("Instâncias recebidas:", instances);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
