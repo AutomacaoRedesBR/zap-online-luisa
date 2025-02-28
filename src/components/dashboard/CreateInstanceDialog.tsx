@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { Plan } from "@/services/instanceService";
+import { useState, useEffect } from "react";
 
 interface CreateInstanceDialogProps {
   open: boolean;
@@ -36,6 +37,33 @@ export const CreateInstanceDialog = ({
   qrCodeData,
   instanceId,
 }: CreateInstanceDialogProps) => {
+  // Mapear os nomes de planos para UUIDs válidos
+  const planUUIDs = {
+    "free-plan": "95c10fdd-b92d-493a-a25d-3fee817c950a",
+    "basic-plan": "741d4a3d-19b5-4a24-93ae-9b4890a40f7a",
+    "premium-plan": "8d2c33c9-a6b9-448e-b76d-9c1ba92c5f03"
+  };
+  
+  // Estado local para armazenar o UUID real
+  const [actualPlanUUID, setActualPlanUUID] = useState<string>("");
+  
+  // Atualizar o UUID quando o planId selecionado mudar
+  useEffect(() => {
+    if (selectedPlanId && planUUIDs[selectedPlanId as keyof typeof planUUIDs]) {
+      setActualPlanUUID(planUUIDs[selectedPlanId as keyof typeof planUUIDs]);
+      console.log("Selected plan ID:", selectedPlanId);
+      console.log("Mapped to UUID:", planUUIDs[selectedPlanId as keyof typeof planUUIDs]);
+    }
+  }, [selectedPlanId]);
+
+  // Função para lidar com a criação de instância com o UUID correto
+  const handleCreateWithUUID = () => {
+    console.log("Creating instance with plan UUID:", actualPlanUUID);
+    // Substituir o ID do plano atual pelo UUID real antes de chamar onCreateInstance
+    localStorage.setItem("currentPlanUUID", actualPlanUUID);
+    onCreateInstance();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -90,6 +118,11 @@ export const CreateInstanceDialog = ({
                   )}
                 </SelectContent>
               </Select>
+              {selectedPlanId && (
+                <p className="text-xs text-gray-500 mt-1">
+                  ID do plano selecionado: {actualPlanUUID || "Carregando..."}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -100,7 +133,7 @@ export const CreateInstanceDialog = ({
               Concluído
             </Button>
           ) : (
-            <Button onClick={onCreateInstance} disabled={isCreatingInstance}>
+            <Button onClick={handleCreateWithUUID} disabled={isCreatingInstance}>
               {isCreatingInstance ? 'Criando...' : 'Criar Instância'}
             </Button>
           )}
