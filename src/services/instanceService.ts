@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,6 +17,22 @@ export interface CreateInstanceData {
 export interface InstanceResponse {
   qrCode: string;
   instanceId: string;
+}
+
+export interface Instance {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  name: string;
+  sequence_id: number;
+  user_sequence_id: number;
+  phone: string | null;
+  evo_api_key: string;
+  sent_messages_number: number;
+  expiration_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Dados fictícios de planos (poderia vir da sua API externa)
@@ -112,7 +127,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
         body: JSON.stringify({
           userId: userData.id,
           name: data.name,
-          planId: realPlanUUID, // Usando o UUID real do plano
+          planId: realPlanUUID,
           email: userData.email,
           userName: userData.name
         }),
@@ -133,8 +148,8 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       // Verificar se a API retornou o QR code como base64
       if (apiResponse && apiResponse.qrCode) {
         return {
-          qrCode: apiResponse.qrCode, // Usar diretamente o QR code fornecido pela API
-          instanceId: apiResponse.instance_id || instanceId // Usar o ID da instância da API ou o gerado localmente
+          qrCode: apiResponse.qrCode,
+          instanceId: apiResponse.instance_id || instanceId
         };
       }
       
@@ -150,6 +165,28 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     }
   } catch (error: any) {
     console.error('Erro ao criar instância:', error);
+    throw error;
+  }
+}
+
+export async function fetchUserInstances(userId: string): Promise<Instance[]> {
+  try {
+    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/get-all-instances', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Falha ao buscar instâncias');
+    }
+
+    const data = await response.json();
+    return data.instances.map((item: any) => item.json);
+  } catch (error) {
+    console.error('Erro ao buscar instâncias:', error);
     throw error;
   }
 }
