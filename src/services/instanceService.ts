@@ -170,10 +170,21 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   }
 }
 
-// Função modificada para contornar problemas de CORS
+// Função modificada para corrigir o formato do user_id
 export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
     console.log('Buscando instâncias para usuário com ID:', userId);
+    
+    // Verificar se temos informações do usuário no localStorage
+    const storedUser = localStorage.getItem('userData');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
+    
+    // Usar user_id em vez de userId para seguir o formato esperado pela API
+    const bodyData = {
+      user_id: userId // Alterando de userId para user_id
+    };
+    
+    console.log('Enviando requisição para API com:', bodyData);
     
     // Tenta usar XMLHttpRequest para evitar problemas com CORS
     return new Promise((resolve, reject) => {
@@ -199,7 +210,7 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
             reject(new Error('Erro ao processar resposta da API'));
           }
         } else {
-          console.error('Erro na requisição:', xhr.status, xhr.statusText);
+          console.error('Erro na requisição:', xhr.status, xhr.responseText);
           reject(new Error(`Erro ao buscar instâncias: ${xhr.statusText}`));
         }
       };
@@ -209,7 +220,8 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
         reject(new Error('Erro de conexão com o servidor'));
       };
       
-      xhr.send(JSON.stringify({ userId }));
+      // Enviar com o formato correto user_id em vez de userId
+      xhr.send(JSON.stringify(bodyData));
     });
   } catch (error) {
     console.error('Erro ao buscar instâncias:', error);
