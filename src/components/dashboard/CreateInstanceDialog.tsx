@@ -21,7 +21,6 @@ interface CreateInstanceDialogProps {
   isLoadingPlans: boolean;
   qrCodeData: string | null;
   instanceId: string | null;
-  instanceDetails?: any;
 }
 
 export const CreateInstanceDialog = ({
@@ -37,7 +36,6 @@ export const CreateInstanceDialog = ({
   isLoadingPlans,
   qrCodeData,
   instanceId,
-  instanceDetails,
 }: CreateInstanceDialogProps) => {
   // Mapear os nomes de planos para UUIDs válidos
   const planUUIDs = {
@@ -81,8 +79,7 @@ export const CreateInstanceDialog = ({
             <h3 className="text-lg font-medium mb-4 text-center">Escaneie o QR Code para ativar sua instância</h3>
             <QRCodeDisplay 
               qrCodeData={qrCodeData} 
-              instanceId={instanceId}
-              instanceDetails={instanceDetails}
+              instanceId={instanceId} 
             />
             <p className="text-sm text-gray-500 mt-4 text-center">
               ID da instância: {instanceId}
