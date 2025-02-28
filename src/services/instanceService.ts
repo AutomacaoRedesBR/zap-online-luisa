@@ -83,10 +83,16 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   try {
     console.log('Iniciando criação de instância para usuário com ID:', data.userId);
     
-    // O correto é usar diretamente o ID recebido em data.userId, que deve ser o UUID válido
-    // Este é o ID que foi obtido do usuário autenticado, não o que está em localStorage
+    // Usar diretamente o ID do usuário passado como parâmetro
+    // Sem manipular ou substituir com dados do localStorage
+    const userId = data.userId;
+    console.log('ID do usuário que será enviado para API:', userId);
     
-    console.log('Usando direto o ID passado como parâmetro:', data.userId);
+    // Verificar se o ID é um UUID válido (para debug)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.warn('O ID fornecido não parece ser um UUID válido:', userId);
+    }
     
     // Obter UUID real do plano
     let realPlanUUID = localStorage.getItem("currentPlanUUID") || "";
@@ -114,11 +120,11 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     
     const userData = JSON.parse(storedUser);
     
-    // Enviar requisição para API externa
+    // Enviar requisição para API externa com o ID correto do usuário
     try {
-      // Usar data.userId como o user_id, que é o UUID correto passado do componente
+      // Dados a serem enviados para a API externa
       const requestData = {
-        user_id: data.userId, // Usar o UUID passado para função ao invés do localStorage
+        user_id: userId, // Usar o ID exato recebido como parâmetro
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,
@@ -176,13 +182,16 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
     console.log('Buscando instâncias para usuário com ID:', userId);
     
-    // Verificar se temos informações do usuário no localStorage
-    const storedUser = localStorage.getItem('userData');
-    const userData = storedUser ? JSON.parse(storedUser) : null;
+    // Usar diretamente o ID do usuário passado como parâmetro sem manipulação
+    // Verificar se o ID é um UUID válido (para debug)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.warn('O ID fornecido para busca de instâncias não parece ser um UUID válido:', userId);
+    }
     
     // Usar user_id em vez de userId para seguir o formato esperado pela API
     const bodyData = {
-      user_id: userId // Alterando de userId para user_id
+      user_id: userId
     };
     
     console.log('Enviando requisição para API com:', bodyData);
@@ -221,7 +230,6 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
         reject(new Error('Erro de conexão com o servidor'));
       };
       
-      // Enviar com o formato correto user_id em vez de userId
       xhr.send(JSON.stringify(bodyData));
     });
   } catch (error) {
