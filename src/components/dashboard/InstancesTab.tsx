@@ -1,8 +1,8 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Settings, Copy, Eye, Trash } from "lucide-react";
+import { Plus, Settings, Copy, Eye, Trash, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserInstances, Instance } from "@/services/instanceService";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,12 +14,18 @@ interface InstancesTabProps {
 
 export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
   const { userData } = useAuth();
+  const [isManuallyRefetching, setIsManuallyRefetching] = useState(false);
   
-  const { data: instances, isLoading, error, refetch } = useQuery({
+  const { data: instances, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['instances', userData?.id],
-    queryFn: () => fetchUserInstances(userData?.id || ''),
+    queryFn: () => {
+      console.log('Executando query para buscar instâncias do usuário:', userData?.id);
+      return fetchUserInstances(userData?.id || '');
+    },
     enabled: !!userData?.id,
     refetchOnWindowFocus: true,
+    retry: 2,
+    staleTime: 30000, // 30 segundos
   });
 
   useEffect(() => {
@@ -40,12 +46,27 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
     toast.success("Função de exclusão será implementada em breve!");
   };
 
-  if (isLoading) {
+  const handleManualRefetch = async () => {
+    setIsManuallyRefetching(true);
+    try {
+      console.log('Iniciando refresh manual das instâncias...');
+      await refetch();
+      toast.success("Dados atualizados com sucesso!");
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+      toast.error("Falha ao atualizar dados. Tente novamente.");
+    } finally {
+      setIsManuallyRefetching(false);
+    }
+  };
+
+  if (isLoading || isManuallyRefetching) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center justify-center gap-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-gray-500">Carregando suas instâncias...</p>
           </div>
         </CardContent>
       </Card>
@@ -60,7 +81,14 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
             Erro ao carregar instâncias. Por favor, tente novamente.
           </div>
           <div className="flex justify-center mt-4">
-            <Button onClick={() => refetch()}>Tentar novamente</Button>
+            <Button 
+              onClick={handleManualRefetch} 
+              disabled={isRefetching}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+              Tentar novamente
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -71,10 +99,21 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Minhas Instâncias</h2>
-        <Button onClick={onCreateNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Instância
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleManualRefetch}
+            disabled={isRefetching}
+            title="Atualizar dados"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button onClick={onCreateNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Instância
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

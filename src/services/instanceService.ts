@@ -170,31 +170,47 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   }
 }
 
+// Função modificada para contornar problemas de CORS
 export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
     console.log('Buscando instâncias para usuário com ID:', userId);
     
-    const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/get-all-instances', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId }),
+    // Tenta usar XMLHttpRequest para evitar problemas com CORS
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://api.teste.onlinecenter.com.br/webhook/get-all-instances', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.withCredentials = false; // Importante para CORS
+      
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            console.log('Dados de instâncias recebidos da API:', data);
+            
+            if (data && data.instances && Array.isArray(data.instances)) {
+              // Processar os dados conforme o formato retornado pela API
+              resolve(data.instances.map((item: any) => item.json));
+            } else {
+              resolve([]);
+            }
+          } catch (error) {
+            console.error('Erro ao processar resposta da API:', error);
+            reject(new Error('Erro ao processar resposta da API'));
+          }
+        } else {
+          console.error('Erro na requisição:', xhr.status, xhr.statusText);
+          reject(new Error(`Erro ao buscar instâncias: ${xhr.statusText}`));
+        }
+      };
+      
+      xhr.onerror = function() {
+        console.error('Erro de rede na requisição para API');
+        reject(new Error('Erro de conexão com o servidor'));
+      };
+      
+      xhr.send(JSON.stringify({ userId }));
     });
-
-    if (!response.ok) {
-      throw new Error('Falha ao buscar instâncias');
-    }
-
-    const data = await response.json();
-    console.log('Dados de instâncias recebidos da API:', data);
-    
-    if (data && data.instances && Array.isArray(data.instances)) {
-      // Processar os dados conforme o formato retornado pela API
-      return data.instances.map((item: any) => item.json);
-    }
-    
-    return [];
   } catch (error) {
     console.error('Erro ao buscar instâncias:', error);
     throw error;
