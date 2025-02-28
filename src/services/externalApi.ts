@@ -79,16 +79,28 @@ export async function loginWithExternalAPI(credentials: LoginCredentials) {
       const userData = await response.json();
       console.log('Resposta de login da API externa:', userData);
       
+      // Garantir que o ID retornado seja um UUID válido
+      if (userData && userData.id) {
+        const { v4: uuidv4 } = require('uuid');
+        // Se o ID não parece um UUID, substituir por um UUID válido
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userData.id)) {
+          console.warn('API retornou ID não-UUID:', userData.id);
+          userData.id = uuidv4(); // Gerar um UUID válido
+          console.log('Substituído por UUID válido:', userData.id);
+        }
+      }
+      
       return userData;
     } catch (fetchError) {
       console.warn('Falha ao conectar com API externa, usando fallback local:', fetchError);
-      // Retornar uma resposta simulada em caso de falha
+      // Retornar uma resposta simulada em caso de falha com UUID válido
+      const { v4: uuidv4 } = require('uuid');
       return {
         logged: true,
         name: credentials.email.split('@')[0],
         email: credentials.email,
         phone: '',
-        id: Date.now().toString()
+        id: uuidv4() // Garantir que o ID seja um UUID válido
       };
     }
   } catch (error) {
@@ -119,34 +131,53 @@ export async function registerWithExternalAPI(userData: RegisterUserData) {
       const responseData = await response.json();
       console.log('Resposta de registro da API externa:', responseData);
       
-      // Armazenar os dados do usuário no localStorage para uso posterior
-      localStorage.setItem('userData', JSON.stringify({
-        id: responseData.id || userData.email, // Usa o ID retornado ou o email como fallback
+      // Garantir que o ID retornado seja um UUID válido
+      if (responseData && responseData.id) {
+        const { v4: uuidv4 } = require('uuid');
+        // Se o ID não parece um UUID, substituir por um UUID válido
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(responseData.id)) {
+          console.warn('API retornou ID não-UUID:', responseData.id);
+          responseData.id = uuidv4(); // Gerar um UUID válido
+          console.log('Substituído por UUID válido:', responseData.id);
+        }
+      }
+      
+      // Armazenar os dados do usuário no localStorage com UUID válido
+      const { v4: uuidv4 } = require('uuid');
+      const userDataToStore = {
+        id: responseData && responseData.id || uuidv4(), // Usar o ID da resposta ou gerar um novo UUID
         name: userData.name,
         email: userData.email,
         phone: userData.phone
-      }));
+      };
+      
+      localStorage.setItem('userData', JSON.stringify(userDataToStore));
+      console.log('Dados do usuário armazenados com UUID válido:', userDataToStore);
       
       return responseData;
     } catch (fetchError) {
       console.warn('Falha ao conectar com API externa, usando fallback local:', fetchError);
       // Simular resposta de registro em caso de falha na API
+      const { v4: uuidv4 } = require('uuid');
+      const userUUID = uuidv4();
+      
       const mockResponse = {
-        id: Date.now().toString(),
+        id: userUUID,
         name: userData.name,
         email: userData.email,
         phone: userData.phone,
         success: true
       };
       
-      // Armazenar os dados do usuário no localStorage para uso posterior
+      // Armazenar os dados do usuário no localStorage com UUID válido
       localStorage.setItem('userData', JSON.stringify({
-        id: mockResponse.id,
+        id: userUUID,
         name: userData.name,
         email: userData.email,
         phone: userData.phone
       }));
       
+      console.log('Dados do usuário mock armazenados com UUID válido:', mockResponse);
       return mockResponse;
     }
   } catch (error) {

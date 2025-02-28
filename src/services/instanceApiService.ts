@@ -23,13 +23,27 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       
       // Tentar recuperar UUID do localStorage como fallback
       const userData = getUserDataFromStorage();
-      if (userData && userData.id && isValidUUID(userData.id)) {
-        console.log('Usando UUID do usuário do localStorage:', userData.id);
-        userUUID = userData.id;
+      if (userData && userData.id) {
+        if (isValidUUID(userData.id)) {
+          console.log('Usando UUID do usuário do localStorage:', userData.id);
+          userUUID = userData.id;
+        } else {
+          console.error('UUID inválido no localStorage:', userData.id);
+          // Gera um novo UUID válido para garantir a operação
+          userUUID = uuidv4();
+          console.log('Gerando novo UUID para o usuário:', userUUID);
+          
+          // Atualiza o localStorage com o UUID válido
+          if (userData) {
+            userData.id = userUUID;
+            localStorage.setItem('userData', JSON.stringify(userData));
+            console.log('localStorage atualizado com UUID válido');
+          }
+        }
       } else {
-        const fallbackId = userData?.id || '';
-        console.error('UUID inválido no localStorage:', fallbackId);
-        throw new Error('UUID do usuário inválido');
+        // Se não há userData, gerar um novo UUID
+        userUUID = uuidv4();
+        console.log('Nenhum dado de usuário encontrado. Gerando novo UUID:', userUUID);
       }
     }
     
@@ -130,14 +144,34 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
       throw new Error('ID do usuário não fornecido');
     }
     
-    // Verificar se o ID é um UUID válido (para debug)
-    if (!isValidUUID(userId)) {
-      console.warn('O ID fornecido para busca de instâncias não parece ser um UUID válido:', userId);
+    // Verificar se o ID é um UUID válido
+    let validUserId = userId;
+    
+    if (!isValidUUID(validUserId)) {
+      console.warn('O ID fornecido não é um UUID válido:', validUserId);
+      
+      // Tentar obter um UUID válido do localStorage
+      const userData = getUserDataFromStorage();
+      if (userData && userData.id && isValidUUID(userData.id)) {
+        validUserId = userData.id;
+        console.log('Usando UUID do usuário do localStorage:', validUserId);
+      } else {
+        // Se não há UUID válido, gerar um
+        validUserId = uuidv4();
+        console.log('Gerando novo UUID para o usuário:', validUserId);
+        
+        // Atualizar o localStorage se possível
+        if (userData) {
+          userData.id = validUserId;
+          localStorage.setItem('userData', JSON.stringify(userData));
+          console.log('localStorage atualizado com UUID válido');
+        }
+      }
     }
     
     // Usar user_id em vez de userId para seguir o formato esperado pela API
     const bodyData = {
-      user_id: userId
+      user_id: validUserId
     };
     
     console.log('Enviando requisição para API com:', bodyData);
