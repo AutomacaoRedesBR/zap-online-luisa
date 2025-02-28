@@ -47,10 +47,18 @@ const Dashboard = () => {
       return;
     }
 
+    // Verificar se o userData existe e tem um ID válido
+    if (!userData || !userData.id) {
+      toast.error("ID do usuário não disponível. Por favor, faça login novamente.");
+      return;
+    }
+
+    console.log("Criando instância com ID de usuário:", userData.id);
+    
     setIsCreatingInstance(true);
     try {
       const result = await createInstanceForUser({
-        userId: userData?.id || "",
+        userId: userData.id, // Garantir que este ID está sendo passado corretamente
         name: instanceName,
         planId: selectedPlanId
       });

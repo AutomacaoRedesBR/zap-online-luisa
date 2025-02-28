@@ -83,15 +83,16 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   try {
     console.log('Iniciando criação de instância para usuário com ID:', data.userId);
     
-    // Usar diretamente o ID do usuário passado como parâmetro
-    // Sem manipular ou substituir com dados do localStorage
-    const userId = data.userId;
-    console.log('ID do usuário que será enviado para API:', userId);
+    // Garantir que temos um ID de usuário válido
+    if (!data.userId) {
+      console.error('ID do usuário não fornecido ou inválido:', data.userId);
+      throw new Error('ID do usuário não fornecido');
+    }
     
     // Verificar se o ID é um UUID válido (para debug)
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(userId)) {
-      console.warn('O ID fornecido não parece ser um UUID válido:', userId);
+    if (!uuidPattern.test(data.userId)) {
+      console.warn('O ID fornecido não parece ser um UUID válido:', data.userId);
     }
     
     // Obter UUID real do plano
@@ -120,11 +121,16 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     
     const userData = JSON.parse(storedUser);
     
+    // Verificar se temos dados suficientes para criar a instância
+    if (!userData || !userData.email) {
+      throw new Error('Dados incompletos do usuário');
+    }
+    
     // Enviar requisição para API externa com o ID correto do usuário
     try {
       // Dados a serem enviados para a API externa
       const requestData = {
-        user_id: userId, // Usar o ID exato recebido como parâmetro
+        user_id: data.userId, // Usar o ID exato recebido como parâmetro
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,
@@ -182,7 +188,12 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
     console.log('Buscando instâncias para usuário com ID:', userId);
     
-    // Usar diretamente o ID do usuário passado como parâmetro sem manipulação
+    // Verificar se o ID é válido
+    if (!userId) {
+      console.error('ID do usuário não fornecido');
+      throw new Error('ID do usuário não fornecido');
+    }
+    
     // Verificar se o ID é um UUID válido (para debug)
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidPattern.test(userId)) {
