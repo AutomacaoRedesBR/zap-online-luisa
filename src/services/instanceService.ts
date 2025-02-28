@@ -92,6 +92,10 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     const userData = JSON.parse(storedUser);
     console.log('Dados do usuário recuperados do localStorage:', userData);
     
+    // Log para debugging - verificar o formato do ID do usuário
+    console.log('Tipo de ID do usuário:', typeof userData.id);
+    console.log('Valor do ID do usuário:', userData.id);
+    
     // Obter UUID real do plano
     let realPlanUUID = localStorage.getItem("currentPlanUUID") || "";
     
@@ -112,16 +116,17 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     
     // Enviar requisição para API externa
     try {
-      // Usando o UUID do usuário diretamente - correção crítica
+      // Criar objeto de dados com formato exato esperado pela API
+      // Garantir que user_id seja o UUID do banco de dados, não apenas o ID local
       const requestData = {
-        user_id: userData.id, // Usando o ID exato do usuário do localStorage
+        user_id: String(userData.id), // Converter para string para garantir formato correto
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,
         userName: userData.name
       };
       
-      console.log("Enviando dados para API externa:", requestData);
+      console.log("Enviando dados para API externa:", JSON.stringify(requestData));
       
       const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
         method: 'POST',
