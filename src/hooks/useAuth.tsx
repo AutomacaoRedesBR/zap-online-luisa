@@ -8,7 +8,6 @@ import {
   registerUser
 } from '@/services/authService';
 import { loginWithExternalAPI } from '@/services/externalApi';
-import { supabase } from "@/integrations/supabase/client";
 
 export function useAuth() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -38,16 +37,16 @@ export function useAuth() {
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      // Primeiro registrar o usuário no Supabase
+      // Registrar o usuário na API externa
       const newUser = await registerUser(data);
       
       if (!newUser || !newUser.id) {
         throw new Error("Falha ao registrar usuário");
       }
 
-      // Armazenar os dados do usuário incluindo o ID correto do Supabase
+      // Armazenar os dados do usuário retornados pela API
       const user = {
-        id: newUser.id, // Este é o ID UUID da tabela users
+        id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         phone: newUser.phone || '',
@@ -72,24 +71,20 @@ export function useAuth() {
   const handleLogin = async (data: LoginData): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Buscar usuário no Supabase primeiro
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('id, name, email, phone')
-        .eq('email', data.email)
-        .eq('password', data.password)
-        .single();
-
-      if (error || !user) {
+      // Fazer login utilizando a API externa
+      console.log("Tentando login com API externa:", data);
+      const response = await loginWithExternalAPI(data);
+      
+      if (!response || !response.logged) {
         throw new Error("Credenciais inválidas");
       }
 
-      // Se encontrou o usuário, armazenar seus dados com o ID correto
+      // Se o login foi bem-sucedido, armazenar dados do usuário
       const userData = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
+        id: response.id,
+        name: response.name || data.email.split('@')[0],
+        email: response.email || data.email,
+        phone: response.phone || '',
       };
       
       // Atualizar localStorage
