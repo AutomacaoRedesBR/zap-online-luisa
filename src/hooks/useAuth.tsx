@@ -78,12 +78,19 @@ export function useAuth() {
         throw new Error("Credenciais inválidas");
       }
 
-      // Se o login foi bem-sucedido, armazenar dados do usuário
+      // Obter o ID do usuário da nova estrutura de resposta
+      const userId = response.user_id;
+      
+      if (!userId) {
+        throw new Error("ID do usuário não retornado pela API");
+      }
+      
+      // Criar objeto de dados do usuário com o ID recebido
       const userData = {
-        id: response.id,
-        name: response.name || data.email.split('@')[0],
-        email: response.email || data.email,
-        phone: response.phone || '',
+        id: userId,
+        name: data.email.split('@')[0], // Fallback para o nome
+        email: data.email,
+        phone: '',
       };
       
       // Atualizar localStorage

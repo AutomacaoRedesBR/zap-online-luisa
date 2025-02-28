@@ -19,6 +19,11 @@ export interface RegisterUserData {
   password: string;
 }
 
+export interface LoginResponse {
+  logged: boolean;
+  user_id?: string;
+}
+
 export async function sendToExternalAPI(data: ExternalApiData) {
   try {
     console.log('Enviando dados para API externa:', data);
@@ -57,7 +62,7 @@ export async function sendToExternalAPI(data: ExternalApiData) {
   }
 }
 
-export async function loginWithExternalAPI(credentials: LoginCredentials) {
+export async function loginWithExternalAPI(credentials: LoginCredentials): Promise<LoginResponse> {
   try {
     console.log('Enviando credenciais de login para API externa:', credentials);
     
@@ -85,10 +90,7 @@ export async function loginWithExternalAPI(credentials: LoginCredentials) {
       // Retornar uma resposta simulada em caso de falha
       return {
         logged: true,
-        name: credentials.email.split('@')[0],
-        email: credentials.email,
-        phone: '',
-        id: Date.now().toString()
+        user_id: Date.now().toString()
       };
     }
   } catch (error) {
