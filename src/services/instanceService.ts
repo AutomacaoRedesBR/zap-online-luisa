@@ -85,7 +85,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
         body: JSON.stringify({
           userId: userData.id,
           name: data.name,
-          planId: data.planId,
+          planId: data.planId, // Garante que estamos enviando o ID do plano e não o nome
           email: userData.email,
           userName: userData.name
         }),
