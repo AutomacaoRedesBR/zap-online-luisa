@@ -50,9 +50,10 @@ export const CreateInstanceDialog = ({
   // Atualizar o UUID quando o planId selecionado mudar
   useEffect(() => {
     if (selectedPlanId && planUUIDs[selectedPlanId as keyof typeof planUUIDs]) {
-      setActualPlanUUID(planUUIDs[selectedPlanId as keyof typeof planUUIDs]);
+      const uuid = planUUIDs[selectedPlanId as keyof typeof planUUIDs];
+      setActualPlanUUID(uuid);
       console.log("Selected plan ID:", selectedPlanId);
-      console.log("Mapped to UUID:", planUUIDs[selectedPlanId as keyof typeof planUUIDs]);
+      console.log("Mapped to UUID:", uuid);
     }
   }, [selectedPlanId]);
 

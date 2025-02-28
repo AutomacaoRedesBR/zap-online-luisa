@@ -112,26 +112,23 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     
     // Enviar requisição para API externa
     try {
-      console.log("Enviando dados para API externa:", {
-        userId: userData.id,
+      // Usando user_id em vez de userId para corresponder ao formato esperado pelo backend
+      const requestData = {
+        user_id: userData.id,
         name: data.name,
-        planId: realPlanUUID,
+        plan_id: realPlanUUID,
         email: userData.email,
         userName: userData.name
-      });
+      };
+      
+      console.log("Enviando dados para API externa:", requestData);
       
       const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId: userData.id,
-          name: data.name,
-          planId: realPlanUUID,
-          email: userData.email,
-          userName: userData.name
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
