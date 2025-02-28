@@ -42,6 +42,13 @@ const PLANS: Plan[] = [
   }
 ];
 
+// Mapeamento dos IDs de plano para UUIDs reais
+const PLAN_UUIDS: Record<string, string> = {
+  "free-plan": "95c10fdd-b92d-493a-a25d-3fee817c950a",
+  "basic-plan": "741d4a3d-19b5-4a24-93ae-9b4890a40f7a",
+  "premium-plan": "8d2c33c9-a6b9-448e-b76d-9c1ba92c5f03"
+};
+
 export async function fetchPlans(): Promise<Plan[]> {
   try {
     // Simula uma chamada para API externa
@@ -69,6 +76,21 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     const userData = JSON.parse(storedUser);
     console.log('Dados do usuário recuperados do localStorage:', userData);
     
+    // Obter UUID real do plano
+    let realPlanUUID = localStorage.getItem("currentPlanUUID") || "";
+    
+    // Se não foi encontrado no localStorage, usar o mapeamento
+    if (!realPlanUUID && PLAN_UUIDS[data.planId]) {
+      realPlanUUID = PLAN_UUIDS[data.planId];
+    }
+    
+    console.log("Plano selecionado:", data.planId);
+    console.log("UUID real do plano:", realPlanUUID);
+    
+    if (!realPlanUUID) {
+      throw new Error("UUID do plano não encontrado");
+    }
+    
     // Gerar um ID de instância UUID único
     const instanceId = uuidv4();
     
@@ -77,6 +99,14 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     
     // Enviar requisição para API externa
     try {
+      console.log("Enviando dados para API externa:", {
+        userId: userData.id,
+        name: data.name,
+        planId: realPlanUUID,
+        email: userData.email,
+        userName: userData.name
+      });
+      
       const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/criar-instancia', {
         method: 'POST',
         headers: {
@@ -85,7 +115,7 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
         body: JSON.stringify({
           userId: userData.id,
           name: data.name,
-          planId: data.planId, // Garante que estamos enviando o ID do plano e não o nome
+          planId: realPlanUUID, // Usando o UUID real do plano
           email: userData.email,
           userName: userData.name
         }),
@@ -99,6 +129,9 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
 
       const apiResponse = await response.json();
       console.log('Resposta da API externa:', apiResponse);
+      
+      // Limpar o UUID do plano após o uso
+      localStorage.removeItem("currentPlanUUID");
     } catch (apiError) {
       console.error('API externa não disponível:', apiError);
       throw new Error('Não foi possível se conectar ao servidor. Tente novamente mais tarde.');
