@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPlans, createInstanceForUser } from "@/services/instanceService";
+import { fetchPlans } from "@/services/planService";
+import { createInstanceForUser } from "@/services/instanceApiService";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { UserInfo } from "@/components/UserInfo";
@@ -13,6 +14,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { OverviewTab } from "@/components/dashboard/OverviewTab";
 import { InstancesTab } from "@/components/dashboard/InstancesTab";
 import { CreateInstanceDialog } from "@/components/dashboard/CreateInstanceDialog";
+import { isValidUUID } from "@/utils/validationUtils";
 
 const Dashboard = () => {
   const { userData, handleLogout } = useAuth();
@@ -51,6 +53,13 @@ const Dashboard = () => {
     if (!userData || !userData.id) {
       console.error("Dados do usuário ausentes ou ID inválido:", userData);
       toast.error("ID do usuário não disponível. Por favor, faça login novamente.");
+      return;
+    }
+
+    // Verificar se o ID do usuário é um UUID válido
+    if (!isValidUUID(userData.id)) {
+      console.error("ID do usuário não é um UUID válido:", userData.id);
+      toast.error("ID do usuário inválido. Por favor, faça login novamente.");
       return;
     }
 

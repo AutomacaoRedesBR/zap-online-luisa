@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Settings, Copy, Eye, Trash, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUserInstances, Instance } from "@/services/instanceService";
+import { fetchUserInstances } from "@/services/instanceApiService";
+import { Instance } from "@/types/instanceTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { isValidUUID } from "@/utils/validationUtils";
 
 interface InstancesTabProps {
   onCreateNew: () => void;
@@ -20,18 +22,27 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
     queryKey: ['instances', userData?.id],
     queryFn: () => {
       console.log('Executando query para buscar instâncias do usuário:', userData?.id);
-      return fetchUserInstances(userData?.id || '');
+      
+      // Verificar se o ID do usuário é válido antes de fazer a busca
+      if (!userData?.id || !isValidUUID(userData.id)) {
+        console.error('ID de usuário inválido para busca de instâncias:', userData?.id);
+        return Promise.resolve([]);
+      }
+      
+      return fetchUserInstances(userData.id);
     },
-    enabled: !!userData?.id,
+    enabled: !!userData?.id && isValidUUID(userData.id),
     refetchOnWindowFocus: true,
     retry: 2,
     staleTime: 30000, // 30 segundos
   });
 
   useEffect(() => {
-    if (userData?.id) {
+    if (userData?.id && isValidUUID(userData.id)) {
       console.log('Iniciando busca de instâncias para usuário:', userData.id);
       refetch();
+    } else if (userData?.id) {
+      console.error('UUID de usuário inválido para busca de instâncias:', userData.id);
     }
   }, [userData?.id, refetch]);
 
