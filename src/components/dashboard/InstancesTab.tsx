@@ -37,6 +37,7 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
   const handleDelete = (instanceId: string) => {
     // Implementar função de delete posteriormente
     console.log("Delete instance:", instanceId);
+    toast.success("Função de exclusão será implementada em breve!");
   };
 
   if (isLoading) {
