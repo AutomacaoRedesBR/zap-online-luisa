@@ -83,33 +83,31 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   try {
     console.log('Iniciando criação de instância para usuário com ID:', data.userId);
     
+    // Verificar se o ID do usuário é um UUID válido
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
     // Verificar se temos um ID de usuário válido
-    if (!data.userId || data.userId.trim() === '') {
-      console.error('ID do usuário não fornecido ou vazio:', data.userId);
+    if (!data.userId || data.userId.trim() === '' || !uuidPattern.test(data.userId)) {
+      console.error('ID do usuário inválido ou não está no formato UUID:', data.userId);
       
-      // Tentar recuperar do localStorage como fallback
+      // Tentar recuperar UUID do localStorage como fallback
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
         const userData = JSON.parse(storedUserData);
-        if (userData && userData.id && userData.id.trim() !== '') {
-          console.log('Usando ID do usuário do localStorage como fallback:', userData.id);
+        if (userData && userData.id && userData.id.trim() !== '' && uuidPattern.test(userData.id)) {
+          console.log('Usando UUID do usuário do localStorage:', userData.id);
           data.userId = userData.id;
         } else {
-          throw new Error('ID do usuário não encontrado no localStorage');
+          console.error('UUID inválido no localStorage:', userData?.id);
+          throw new Error('UUID do usuário inválido');
         }
       } else {
-        throw new Error('ID do usuário não fornecido e não há dados no localStorage');
+        throw new Error('UUID do usuário não encontrado');
       }
     }
     
-    // Log adicional para depuração
-    console.log('Confirmação do ID de usuário que será enviado:', data.userId);
-    
-    // Verificar se o ID é um UUID válido (para debug)
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(data.userId)) {
-      console.warn('O ID fornecido não parece ser um UUID válido:', data.userId);
-    }
+    // Log para confirmação
+    console.log('UUID do usuário validado:', data.userId);
     
     // Obter UUID real do plano
     let realPlanUUID = localStorage.getItem("currentPlanUUID") || "";
@@ -142,11 +140,11 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       throw new Error('Dados incompletos do usuário');
     }
     
-    // Enviar requisição para API externa com o ID correto do usuário
+    // Enviar requisição para API externa com o UUID correto do usuário
     try {
       // Dados a serem enviados para a API externa
       const requestData = {
-        user_id: data.userId, // Usar o ID exato recebido como parâmetro ou recuperado do localStorage
+        user_id: data.userId, // Este deve ser um UUID válido
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,

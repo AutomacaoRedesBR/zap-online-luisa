@@ -35,9 +35,18 @@ export async function registerUser(userData: RegisterData) {
       throw new Error('Falha ao criar usuário na API externa');
     }
     
+    // Garantir que estamos armazenando o UUID corretamente
+    console.log('ID do usuário retornado pela API:', response.id);
+    
+    // Validar se é um UUID válido
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(response.id)) {
+      console.warn('O ID retornado não parece ser um UUID válido:', response.id);
+    }
+    
     // Retornar o usuário com o ID gerado pela API externa
     const newUser = {
-      id: response.id,
+      id: response.id, // Este deve ser um UUID válido retornado pela API
       name: userData.name,
       email: userData.email,
       phone: userData.phone
