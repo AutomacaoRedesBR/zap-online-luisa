@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -171,6 +172,8 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
 
 export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
+    console.log('Buscando instâncias para usuário com ID:', userId);
+    
     const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/get-all-instances', {
       method: 'POST',
       headers: {
@@ -184,7 +187,14 @@ export async function fetchUserInstances(userId: string): Promise<Instance[]> {
     }
 
     const data = await response.json();
-    return data.instances.map((item: any) => item.json);
+    console.log('Dados de instâncias recebidos da API:', data);
+    
+    if (data && data.instances && Array.isArray(data.instances)) {
+      // Processar os dados conforme o formato retornado pela API
+      return data.instances.map((item: any) => item.json);
+    }
+    
+    return [];
   } catch (error) {
     console.error('Erro ao buscar instâncias:', error);
     throw error;
