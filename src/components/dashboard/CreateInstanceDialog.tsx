@@ -64,18 +64,6 @@ export const CreateInstanceDialog = ({
   // Função para lidar com a criação de instância com o UUID correto
   const handleCreateWithUUID = () => {
     console.log("Creating instance with plan UUID:", actualPlanUUID);
-    // Verificar se temos um UUID válido para o usuário
-    if (userData && userData.id) {
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidPattern.test(userData.id)) {
-        console.warn(`O ID de usuário não parece ser um UUID válido: ${userData.id}`);
-      } else {
-        console.log(`Criando instância para usuário com UUID: ${userData.id}`);
-      }
-    } else {
-      console.error("ID de usuário não encontrado!");
-    }
-    
     // Substituir o ID do plano atual pelo UUID real antes de chamar onCreateInstance
     localStorage.setItem("currentPlanUUID", actualPlanUUID);
     onCreateInstance();
