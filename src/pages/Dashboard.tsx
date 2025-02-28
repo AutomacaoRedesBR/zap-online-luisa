@@ -25,6 +25,7 @@ const Dashboard = () => {
   const [isCreatingInstance, setIsCreatingInstance] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [instanceId, setInstanceId] = useState<string | null>(null);
+  const [instanceDetails, setInstanceDetails] = useState<any>(null);
 
   const { data: plans, isLoading: isLoadingPlans } = useQuery({
     queryKey: ["plans"],
@@ -58,6 +59,13 @@ const Dashboard = () => {
       if (result && result.qrCode && result.instanceId) {
         setQrCodeData(result.qrCode);
         setInstanceId(result.instanceId);
+        
+        // Armazenar os detalhes completos da instância retornados pela API
+        if (result.instanceData) {
+          setInstanceDetails(result.instanceData);
+          console.log("Detalhes da instância recebidos:", result.instanceData);
+        }
+        
         toast.success("Instância criada com sucesso!");
       } else {
         throw new Error("Resposta inválida da API");
@@ -75,6 +83,7 @@ const Dashboard = () => {
     setInstanceId(null);
     setInstanceName("");
     setSelectedPlanId("");
+    setInstanceDetails(null);
     setShowCreateInstanceDialog(true);
   };
 
@@ -117,6 +126,7 @@ const Dashboard = () => {
         isLoadingPlans={isLoadingPlans}
         qrCodeData={qrCodeData}
         instanceId={instanceId}
+        instanceDetails={instanceDetails}
       />
 
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>

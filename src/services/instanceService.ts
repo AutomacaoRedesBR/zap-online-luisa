@@ -18,6 +18,21 @@ export interface CreateInstanceData {
 export interface InstanceResponse {
   qrCode: string;
   instanceId: string;
+  instanceData?: {
+    id: string;
+    user_id: string;
+    plan_id: string;
+    name: string;
+    sequence_id: number;
+    user_sequence_id: number;
+    phone: string | null;
+    evo_api_key: string;
+    sent_messages_number: number;
+    expiration_date: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  };
 }
 
 // Dados fictícios de planos (poderia vir da sua API externa)
@@ -132,6 +147,22 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       
       // Limpar o UUID do plano após o uso
       localStorage.removeItem("currentPlanUUID");
+      
+      // Usar os dados retornados pela API para criar o QR Code
+      if (apiResponse && apiResponse.id) {
+        // Se a API retornou o ID, usamos ele para o QR code em vez do UUID gerado localmente
+        const apiInstanceId = apiResponse.id;
+        const apiQrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${apiInstanceId}`;
+        
+        // Retornar os dados da API junto com o QR code
+        return {
+          qrCode: apiQrCodeData,
+          instanceId: apiInstanceId,
+          instanceData: apiResponse // Incluir todos os dados retornados pela API
+        };
+      }
+      
+      // Se a resposta não tiver o formato esperado, continuar com o ID gerado localmente
     } catch (apiError) {
       console.error('API externa não disponível:', apiError);
       throw new Error('Não foi possível se conectar ao servidor. Tente novamente mais tarde.');
