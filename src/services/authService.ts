@@ -23,6 +23,7 @@ export interface RegisterData {
 export async function registerUser(userData: RegisterData) {
   try {
     // Registrar o usuário apenas na API externa
+    console.log("Enviando dados de registro para API externa:", userData);
     const response = await registerWithExternalAPI({
       name: userData.name,
       email: userData.email,

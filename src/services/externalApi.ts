@@ -102,7 +102,7 @@ export async function registerWithExternalAPI(userData: RegisterUserData) {
     console.log('Enviando dados de registro para API externa:', userData);
     
     try {
-      const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/register', {
+      const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/create-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
