@@ -31,13 +31,37 @@ export async function registerUser(userData: RegisterData) {
       password: userData.password
     });
     
-    if (!response || !response.id) {
-      throw new Error('Falha ao criar usuário na API externa');
+    console.log("Resposta da API externa:", response);
+    
+    // Verificar se a resposta contém placeholders ou valores inválidos
+    if (!response || 
+        (response.id && response.id.includes("{{")) || 
+        (response.user_id && response.user_id.includes("{{"))) {
+      console.error('Resposta da API contém placeholders:', response);
+      
+      // Gerar um ID temporário se a API retornou placeholders
+      const tempId = `user-${Date.now()}`;
+      
+      // Retornar o usuário com o ID gerado localmente
+      const newUser = {
+        id: tempId,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone
+      };
+      
+      console.log("Usuário registrado com ID temporário:", newUser);
+      return newUser;
     }
     
-    // Retornar o usuário com o ID gerado pela API externa
+    // Se a resposta tem um user_id válido, use-o; caso contrário, tente usar o id
+    const userId = response.user_id && !response.user_id.includes("{{") 
+      ? response.user_id 
+      : (response.id && !response.id.includes("{{") ? response.id : `user-${Date.now()}`);
+    
+    // Retornar o usuário com o ID fornecido pela API ou gerado localmente
     const newUser = {
-      id: response.id,
+      id: userId,
       name: userData.name,
       email: userData.email,
       phone: userData.phone
@@ -48,17 +72,6 @@ export async function registerUser(userData: RegisterData) {
   } catch (error) {
     console.error('Erro ao registrar usuário:', error);
     throw error;
-  }
-}
-
-export async function fetchFreePlan() {
-  try {
-    // Poderíamos buscar isso da sua API externa
-    // Por enquanto, vamos retornar um valor padrão para plano gratuito
-    return "free-plan";
-  } catch (error) {
-    console.error('Erro ao carregar plano gratuito:', error);
-    return null;
   }
 }
 

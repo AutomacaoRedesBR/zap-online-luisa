@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { LoginForm } from '@/components/LoginForm';
 import { RegisterForm } from '@/components/RegisterForm';
 import { RegistrationSuccess } from '@/components/RegistrationSuccess';
-import { fetchFreePlan } from '@/services/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,7 +12,6 @@ const Index = () => {
     isLoading, 
     registrationSuccessful,
     isLoggedIn,
-    setFreePlanId, 
     handleRegister, 
     handleLogin,
     resetRegistrationState
@@ -22,15 +20,6 @@ const Index = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadFreePlan = async () => {
-      const planId = await fetchFreePlan();
-      if (planId) setFreePlanId(planId);
-    };
-
-    loadFreePlan();
-  }, [setFreePlanId]);
 
   // Verificar se o usuário já está logado ao iniciar (apenas uma vez)
   useEffect(() => {
