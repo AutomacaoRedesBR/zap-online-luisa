@@ -83,18 +83,10 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   try {
     console.log('Iniciando criação de instância para usuário com ID:', data.userId);
     
-    // Recuperar dados do usuário do localStorage
-    const storedUser = localStorage.getItem('userData');
-    if (!storedUser) {
-      throw new Error('Dados do usuário não encontrados');
-    }
+    // O correto é usar diretamente o ID recebido em data.userId, que deve ser o UUID válido
+    // Este é o ID que foi obtido do usuário autenticado, não o que está em localStorage
     
-    const userData = JSON.parse(storedUser);
-    console.log('Dados do usuário recuperados do localStorage:', userData);
-    
-    // Log para debugging - verificar o formato do ID do usuário
-    console.log('Tipo de ID do usuário:', typeof userData.id);
-    console.log('Valor do ID do usuário:', userData.id);
+    console.log('Usando direto o ID passado como parâmetro:', data.userId);
     
     // Obter UUID real do plano
     let realPlanUUID = localStorage.getItem("currentPlanUUID") || "";
@@ -114,12 +106,19 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     // Gerar um ID de instância UUID único
     const instanceId = uuidv4();
     
+    // Recuperar dados do usuário do localStorage (apenas para email e nome)
+    const storedUser = localStorage.getItem('userData');
+    if (!storedUser) {
+      throw new Error('Dados do usuário não encontrados');
+    }
+    
+    const userData = JSON.parse(storedUser);
+    
     // Enviar requisição para API externa
     try {
-      // Criar objeto de dados com formato exato esperado pela API
-      // Garantir que user_id seja o UUID do banco de dados, não apenas o ID local
+      // Usar data.userId como o user_id, que é o UUID correto passado do componente
       const requestData = {
-        user_id: String(userData.id), // Converter para string para garantir formato correto
+        user_id: data.userId, // Usar o UUID passado para função ao invés do localStorage
         name: data.name,
         plan_id: realPlanUUID,
         email: userData.email,
