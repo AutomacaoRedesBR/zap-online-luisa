@@ -199,44 +199,42 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
   }
 }
 
-// Função modificada para buscar as instâncias corretamente
+// Função para buscar as instâncias do usuário garantindo que sempre usa o ID do localStorage
 export async function fetchUserInstances(userId: string): Promise<Instance[]> {
   try {
     console.log('Buscando instâncias para usuário com ID:', userId);
     
-    // Verificar se o ID é válido
-    if (!userId || userId.trim() === '') {
-      console.error('ID do usuário não fornecido ou vazio');
-      
-      // Tentar recuperar do localStorage como fallback
-      const storedUserData = localStorage.getItem('userData');
-      if (storedUserData) {
-        const userData = JSON.parse(storedUserData);
-        if (userData && userData.id && userData.id.trim() !== '') {
-          console.log('Usando ID do usuário do localStorage como fallback:', userData.id);
-          userId = userData.id;
-        } else {
-          throw new Error('ID do usuário não encontrado no localStorage');
-        }
-      } else {
-        throw new Error('ID do usuário não fornecido e não há dados no localStorage');
+    // SEMPRE verificar localStorage primeiro, independente do userId passado como parâmetro
+    let userIdToUse = userId;
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (storedUserData) {
+      const userData = JSON.parse(storedUserData);
+      if (userData && userData.id && userData.id.trim() !== '') {
+        console.log('Usando ID do usuário do localStorage:', userData.id);
+        userIdToUse = userData.id;
       }
+    }
+    
+    // Verificar se o ID é válido após tentar localStorage
+    if (!userIdToUse || userIdToUse.trim() === '') {
+      throw new Error('ID do usuário não disponível nem no localStorage');
     }
     
     // Verificar se o ID é um UUID válido (para debug)
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(userId)) {
-      console.warn('O ID fornecido para busca de instâncias não parece ser um UUID válido:', userId);
+    if (!uuidPattern.test(userIdToUse)) {
+      console.warn('O ID fornecido para busca de instâncias não parece ser um UUID válido:', userIdToUse);
     }
     
     // Dados para enviar à API
     const requestData = {
-      user_id: userId
+      user_id: userIdToUse  // Sempre usar o ID do localStorage
     };
     
     console.log('Enviando requisição para API de instâncias com dados:', JSON.stringify(requestData));
     
-    // Usar fetch diretamente em vez de XMLHttpRequest
+    // Usar fetch para fazer a requisição
     const response = await fetch('https://api.teste.onlinecenter.com.br/webhook/get-all-instances', {
       method: 'POST',
       headers: {

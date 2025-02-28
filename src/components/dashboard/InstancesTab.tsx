@@ -19,20 +19,19 @@ export const InstancesTab = ({ onCreateNew }: InstancesTabProps) => {
   const { data: instances, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['instances', userData?.id],
     queryFn: () => {
+      // Sempre tenta buscar usando o ID do localStorage (dentro da função fetchUserInstances)
       console.log('Executando query para buscar instâncias do usuário:', userData?.id);
       return fetchUserInstances(userData?.id || '');
     },
-    enabled: !!userData?.id,
+    enabled: true, // Sempre habilitado, pois fetchUserInstances irá verificar localStorage
     refetchOnWindowFocus: true,
     retry: 2,
     staleTime: 30000, // 30 segundos
   });
 
   useEffect(() => {
-    if (userData?.id) {
-      console.log('Iniciando busca de instâncias para usuário:', userData.id);
-      refetch();
-    }
+    console.log('Iniciando busca de instâncias para usuário:', userData?.id);
+    refetch();
   }, [userData?.id, refetch]);
 
   const copyToClipboard = (text: string) => {
