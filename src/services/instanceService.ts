@@ -94,9 +94,6 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
     // Gerar um ID de instância UUID único
     const instanceId = uuidv4();
     
-    // Criar a URL do QR Code
-    const qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${instanceId}`;
-    
     // Enviar requisição para API externa
     try {
       console.log("Enviando dados para API externa:", {
@@ -132,15 +129,25 @@ export async function createInstanceForUser(data: CreateInstanceData): Promise<I
       
       // Limpar o UUID do plano após o uso
       localStorage.removeItem("currentPlanUUID");
+
+      // Verificar se a API retornou o QR code como base64
+      if (apiResponse && apiResponse.qrCode) {
+        return {
+          qrCode: apiResponse.qrCode, // Usar diretamente o QR code fornecido pela API
+          instanceId: apiResponse.instance_id || instanceId // Usar o ID da instância da API ou o gerado localmente
+        };
+      }
+      
+      // Fallback: se a API não retornou um QR code, criar um local
+      const qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${instanceId}`;
+      return {
+        qrCode: qrCodeData,
+        instanceId: instanceId
+      };
     } catch (apiError) {
       console.error('API externa não disponível:', apiError);
       throw new Error('Não foi possível se conectar ao servidor. Tente novamente mais tarde.');
     }
-    
-    return {
-      qrCode: qrCodeData,
-      instanceId: instanceId
-    };
   } catch (error: any) {
     console.error('Erro ao criar instância:', error);
     throw error;

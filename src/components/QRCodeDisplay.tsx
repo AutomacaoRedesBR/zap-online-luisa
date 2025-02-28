@@ -11,10 +11,16 @@ interface QRCodeDisplayProps {
 
 export const QRCodeDisplay = ({ instanceId, onScanComplete, qrCodeUrl, qrCodeData }: QRCodeDisplayProps) => {
   const [displayUrl, setDisplayUrl] = useState<string>('');
-
+  
   useEffect(() => {
     if (qrCodeData) {
-      setDisplayUrl(qrCodeData);
+      // Verificar se o qrCodeData já é um dado de imagem completo (base64 ou URL)
+      if (qrCodeData.startsWith('data:image') || qrCodeData.startsWith('http')) {
+        setDisplayUrl(qrCodeData);
+      } else {
+        // Se for apenas um texto base64 sem o cabeçalho de dados, adicionar o prefixo necessário
+        setDisplayUrl(`data:image/png;base64,${qrCodeData}`);
+      }
     } else if (qrCodeUrl) {
       setDisplayUrl(qrCodeUrl);
     } else {
