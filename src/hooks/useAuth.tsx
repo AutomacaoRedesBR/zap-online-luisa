@@ -15,6 +15,7 @@ export function useAuth() {
   const [userToken, setUserToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [registrationSuccessful, setRegistrationSuccessful] = useState(false);
+  const [freePlanId, setFreePlanId] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn') === 'true';
   });
@@ -131,6 +132,7 @@ export function useAuth() {
     registrationSuccessful,
     isLoggedIn,
     authInitialized,
+    setFreePlanId,
     handleRegister,
     handleLogin,
     handleLogout,

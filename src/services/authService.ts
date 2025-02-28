@@ -1,8 +1,18 @@
 
-import { toast } from "sonner";
-import { v4 as uuidv4 } from 'uuid';
-import { registerWithExternalAPI, loginWithExternalAPI } from "./externalApi";
-import { isValidUUID } from "@/utils/validationUtils";
+import { sendToExternalAPI, registerWithExternalAPI } from "./externalApi";
+import { isValidUUID, getUserDataFromStorage } from "@/utils/validationUtils";
+
+export interface UserData {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
 
 export interface RegisterData {
   name: string;
@@ -11,125 +21,131 @@ export interface RegisterData {
   password: string;
 }
 
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-}
-
-/**
- * Registra um novo usuário
- */
-export async function registerUser(data: RegisterData): Promise<UserData> {
+export async function registerUser(userData: RegisterData) {
   try {
-    console.log('Registrando usuário:', data);
-
-    // Enviar dados para a API externa
-    const response = await registerWithExternalAPI(data);
+    // Registrar o usuário apenas na API externa
+    console.log("Enviando dados de registro para API externa:", userData);
+    const response = await registerWithExternalAPI({
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      password: userData.password
+    });
     
     if (!response || !response.id) {
-      throw new Error('Falha ao registrar usuário: resposta inválida');
+      throw new Error('Falha ao criar usuário na API externa');
     }
     
-    // Garantir que o ID seja um UUID válido
-    let userId = response.id;
-    if (!isValidUUID(userId)) {
-      console.warn('API retornou ID não-UUID:', userId);
-      userId = uuidv4(); // Gerar um UUID válido
-      console.log('Substituído por UUID válido:', userId);
+    // Garantir que estamos armazenando o UUID corretamente
+    console.log('ID do usuário retornado pela API:', response.id);
+    
+    // Validar se é um UUID válido
+    if (!isValidUUID(response.id)) {
+      console.warn('O ID retornado não parece ser um UUID válido:', response.id);
     }
     
-    // Preparar os dados do usuário para retorno
-    const userData: UserData = {
-      id: userId,
-      name: data.name,
-      email: data.email,
-      phone: data.phone
+    // Retornar o usuário com o ID gerado pela API externa
+    const newUser = {
+      id: response.id, // Este deve ser um UUID válido retornado pela API
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone
     };
     
-    // Armazenar dados do usuário no localStorage
-    localStorage.setItem('userData', JSON.stringify(userData));
-    console.log('Dados do usuário armazenados com UUID válido:', userData);
-    
-    return userData;
-  } catch (error: any) {
+    console.log("Usuário registrado com sucesso na API externa:", newUser);
+    return newUser;
+  } catch (error) {
     console.error('Erro ao registrar usuário:', error);
     throw error;
   }
 }
 
-/**
- * Realiza login de um usuário
- */
-export async function loginUser(data: LoginData): Promise<UserData> {
+export async function fetchFreePlan() {
   try {
-    console.log('Realizando login:', data);
+    // Poderíamos buscar isso da sua API externa
+    // Por enquanto, vamos retornar um valor padrão para plano gratuito
+    return "free-plan";
+  } catch (error) {
+    console.error('Erro ao carregar plano gratuito:', error);
+    return null;
+  }
+}
+
+export async function createUserInstance(userId: string, planId: string) {
+  try {
+    // Criar instância apenas na API externa
+    const expirationDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     
-    // Fazer login na API externa
-    const response = await loginWithExternalAPI(data);
-    
-    if (!response || !response.logged) {
-      throw new Error('Credenciais inválidas');
+    // Recuperar email do usuário do localStorage
+    const userData = getUserDataFromStorage();
+    if (!userData) {
+      throw new Error('Dados do usuário não encontrados');
     }
     
-    // Garantir que o ID seja um UUID válido
-    let userId = response.id;
-    if (!isValidUUID(userId)) {
-      console.warn('API retornou ID não-UUID:', userId);
-      userId = uuidv4(); // Gerar um UUID válido
-      console.log('Substituído por UUID válido:', userId);
-    }
-    
-    // Preparar os dados do usuário para retorno
-    const userData: UserData = {
-      id: userId,
-      name: response.name || data.email.split('@')[0],
-      email: response.email || data.email,
-      phone: response.phone || ''
+    // Dados para enviar à API externa
+    const externalApiData = {
+      name: 'Instância Principal', 
+      email: userData.email,
+      phone: userData.phone || '',
+      instance_id: `instance-${Date.now()}` // Gerar um ID temporário
     };
+
+    // Enviar para API externa
+    const response = await sendToExternalAPI(externalApiData);
     
-    // Armazenar dados do usuário no localStorage
-    localStorage.setItem('userData', JSON.stringify(userData));
-    localStorage.setItem('isLoggedIn', 'true');
-    
-    console.log('Login realizado com sucesso. Dados armazenados:', userData);
-    
-    return userData;
-  } catch (error: any) {
-    console.error('Erro ao fazer login:', error);
+    // Retornar dados da instância criada
+    return {
+      id: externalApiData.instance_id,
+      user_id: userId,
+      plan_id: planId,
+      name: externalApiData.name,
+      expiration_date: expirationDate,
+      status: 'pending',
+      sent_messages_number: 0,
+      user_sequence_id: 1
+    };
+  } catch (error) {
+    console.error('Erro ao criar instância:', error);
     throw error;
   }
 }
 
-/**
- * Recupera dados do usuário
- */
-export function getUserData(): UserData | null {
+// Função auxiliar para obter email do usuário
+function getUserEmail(userId: string): string {
   try {
-    const userDataStr = localStorage.getItem('userData');
-    if (!userDataStr) return null;
+    const userData = getUserDataFromStorage();
+    if (!userData) return '';
     
-    const userData = JSON.parse(userDataStr) as UserData;
-    
-    // Verificar se o ID é um UUID válido
-    if (userData && userData.id && !isValidUUID(userData.id)) {
-      console.warn('ID do usuário armazenado não é um UUID válido:', userData.id);
-      // Corrigir o ID para um UUID válido
-      userData.id = uuidv4();
-      // Atualizar o localStorage
-      localStorage.setItem('userData', JSON.stringify(userData));
-      console.log('UUID do usuário corrigido:', userData.id);
-    }
-    
-    return userData;
+    return userData.email || '';
   } catch (error) {
-    console.error('Erro ao recuperar dados do usuário:', error);
-    return null;
+    console.error('Erro ao buscar email do usuário:', error);
+    return '';
   }
+}
+
+export async function getUserInstance(userId: string) {
+  // Poderíamos buscar isso da sua API externa
+  // Por enquanto, vamos retornar uma instância fictícia
+  const userData = getUserDataFromStorage();
+  if (!userData) return null;
+  
+  return {
+    id: `instance-${Date.now()}`,
+    user_id: userId,
+    name: 'Instância Principal',
+    status: 'active',
+    sent_messages_number: 0
+  };
+}
+
+export async function updateInstanceApiKey(instanceId: string, apiKey: string) {
+  // Esta função poderia fazer uma chamada para sua API externa
+  console.log(`API Key ${apiKey} atualizada para instância ${instanceId}`);
+  return true;
+}
+
+export async function updateInstanceStatus(instanceId: string, status: string) {
+  // Esta função poderia fazer uma chamada para sua API externa
+  console.log(`Status ${status} atualizado para instância ${instanceId}`);
+  return true;
 }

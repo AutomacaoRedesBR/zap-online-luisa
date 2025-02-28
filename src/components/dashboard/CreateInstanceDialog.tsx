@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Plan } from "@/types/instanceTypes";
 import { PLAN_UUIDS } from "@/types/instanceTypes";
 import { isValidUUID } from "@/utils/validationUtils";
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreateInstanceDialogProps {
   open: boolean;
@@ -46,7 +45,6 @@ export const CreateInstanceDialog = ({
   
   // Estado local para armazenar o UUID real
   const [actualPlanUUID, setActualPlanUUID] = useState<string>("");
-  const [validUserId, setValidUserId] = useState<string>("");
   
   // Atualizar o UUID quando o planId selecionado mudar
   useEffect(() => {
@@ -61,39 +59,15 @@ export const CreateInstanceDialog = ({
     }
   }, [selectedPlanId]);
 
-  // Verificar e corrigir o ID do usuário
-  useEffect(() => {
-    if (userData) {
-      if (userData.id && isValidUUID(userData.id)) {
-        setValidUserId(userData.id);
-        console.log("ID de usuário válido:", userData.id);
-      } else {
-        // Se o ID não for válido, gerar um novo UUID
-        const newUUID = uuidv4();
-        setValidUserId(newUUID);
-        console.log("ID de usuário inválido. Gerado novo UUID:", newUUID);
-        
-        // Atualizar localStorage
-        if (userData) {
-          const updatedUserData = { ...userData, id: newUUID };
-          localStorage.setItem('userData', JSON.stringify(updatedUserData));
-          console.log("localStorage atualizado com novo UUID");
-        }
-      }
-    }
-  }, [userData]);
-  
   // Função para lidar com a criação de instância com o UUID correto
   const handleCreateWithUUID = () => {
     console.log("Creating instance with plan UUID:", actualPlanUUID);
     // Verificar se temos um UUID válido para o usuário
-    if (userData) {
-      const userId = userData.id;
-      if (!isValidUUID(userId)) {
-        console.warn(`O ID de usuário não parece ser um UUID válido: ${userId}`);
-        console.log(`Usando UUID válido alternativo: ${validUserId}`);
+    if (userData && userData.id) {
+      if (!isValidUUID(userData.id)) {
+        console.warn(`O ID de usuário não parece ser um UUID válido: ${userData.id}`);
       } else {
-        console.log(`Criando instância para usuário com UUID: ${userId}`);
+        console.log(`Criando instância para usuário com UUID: ${userData.id}`);
       }
     } else {
       console.error("ID de usuário não encontrado!");
@@ -167,7 +141,7 @@ export const CreateInstanceDialog = ({
             {userData && (
               <div className="text-xs text-gray-500 mt-1 p-2 bg-gray-100 rounded">
                 <p><strong>Dados do usuário:</strong></p>
-                <p>ID: {isValidUUID(userData.id) ? userData.id : validUserId}</p>
+                <p>ID: {userData.id || "Não disponível"}</p>
                 <p>Nome: {userData.name || "Não disponível"}</p>
                 <p>Email: {userData.email || "Não disponível"}</p>
               </div>
